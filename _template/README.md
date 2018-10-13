@@ -1,12 +1,13 @@
-# YKNR_MessageKeyWord
+# _template
 
-[Res]: https://yakinori0424.github.io/RPGMakerMVPlugins/\----------------------..js "\----------------------..js"
+[Res]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/_template/----------------------.js "\----------------------.js"
 
 このページはテンプレート用です
 
 ---
 
-[プラグインのダウンロードはこちら][Res]
+[プラグインのダウンロードはこちら][Res]  
+右クリック → 名前を付けてリンク先を保存
 
 ---
 
