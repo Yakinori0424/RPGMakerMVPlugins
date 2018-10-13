@@ -4,7 +4,8 @@
 ---
 
 <!-- ここからURL一覧 -->
-[test.js]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/code/test.js "test"
+[test.js]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/code/test.js
+[YKNR_MessageKeyWord.js]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/code/YKNR_MessageKeyWord.js
 
 <!-- ここまでURL一覧 -->
 
@@ -12,7 +13,7 @@
 
 |プラグイン名|説明|バージョン|
 |:--|:--|:--|
-|[test.js][]|テスト|1.0.0|
+|[YKNR_MessageKeyWord.js][]|ゲームでよく使うキーワードを登録し、  制御文字（\KW[***]）で呼び出せるようになります。|2.0.1|
 
 <!-- |[test.js][]|テンプレ|1.0.0| -->
 
