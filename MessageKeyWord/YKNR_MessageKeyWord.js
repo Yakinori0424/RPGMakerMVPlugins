@@ -1,5 +1,5 @@
 //============================================================================
-// YKNR_MessageKeyWord.js - ver.2.0.0
+// YKNR_MessageKeyWord.js - ver.2.0.1
 // ---------------------------------------------------------------------------
 // Copyright (c) 2017 Yakinori
 // This software is released under the MIT License.
@@ -66,6 +66,7 @@
  *
  * ---------------------------------------------------------------------------
  *【更新履歴】
+ * [2018/10/14] [2.0.1] ・ただのソースコードの改修。実装内容に変更は無し。
  * [2017/10/15] [2.0.0] ・1.5.0 以降の仕様に合わせてパラメータの作り直し。
  *                        パラメータ名が変更になったため、再度設定が必要です。
  * [2017/02/11] [1.0.0] 公開
@@ -95,17 +96,30 @@
 
     //------------------------------------------------------------------------
     /**
+     * 対象のオブジェクト上の関数を別の関数に差し替えます.
+     *
+     * @method monkeyPatch
+     * @param {Object} target 対象のオブジェクト
+     * @param {String} methodName オーバーライドする関数名
+     * @param {Function} newMethod 新しい関数を返す関数
+     */
+    function monkeyPatch(target, methodName, newMethod) {
+        target[methodName] = newMethod(target[methodName]);
+    };
+
+    //------------------------------------------------------------------------
+    /**
      * Jsonをパースし, プロパティの値を変換して返す
      *
      * @method jsonParamsParse
      * @param {String} json JSON文字列
      * @return {Object} パース後のオブジェクト
      */
-    var jsonParamsParse = function(json) {
+    function jsonParamsParse(json) {
         return JSON.parse(json, parseRevive);
     };
 
-    var parseRevive = function(key, value) {
+    function parseRevive(key, value) {
         if (key === '') { return value; }
         try {
             return JSON.parse(value, parseRevive);
@@ -117,18 +131,18 @@
     /**
      * Jsonをパースして変換後, 配列ならば連想配列に変換して返す
      *
-     * @method parseArrayToHash
+     * @method jsonParamsParse
      * @param {String} json JSON文字列
      * @param {String} keyName 連想配列のキーとする要素のあるプロパティ名
      * @param {String} valueName 連想配列の値とする要素のあるプロパティ名
      * @return {Object} パース後の連想配列
      */
-    var parseArrayToHash = function(json, keyName, valueName) {
-        var hash = {};
-        var array = jsonParamsParse(json);
+    function parseArrayToHash(json, keyName, valueName) {
+        let hash = {};
+        const array = jsonParamsParse(json);
         if (Array.isArray(array)) {
-            for (var i = 0; i < array.length; i++) {
-                var key = array[i][keyName];
+            for (let i = 0, l = array.length; i < l; i++) {
+                const key = array[i][keyName];
                 if (key && key !== '') {
                     hash[key] = array[i][valueName] || null;
                 }
@@ -143,13 +157,15 @@
     var keyWordTable = parseArrayToHash(parameters['KeyWordList'], 'Key', 'Word');
 
     //------------------------------------------------------------------------
-    var _Window_Base_convertEscapeCharacters = Window_Base.prototype.convertEscapeCharacters;
-    Window_Base.prototype.convertEscapeCharacters = function(text) {
-        var keyWord = null;
-        text = text.replace(/\\KW\[(.+?)\]/gi, function() {
-            keyWord = keyWordTable[arguments[1]];
-            return keyWord !== undefined ? keyWord : '\\' + arguments[0];
-        }.bind(this));
-        return _Window_Base_convertEscapeCharacters.call(this, text);
-    };
+
+    monkeyPatch(Window_Base.prototype, 'convertEscapeCharacters', function($) {
+        return function(text) {
+            let keyWord = null;
+            text = text.replace(/\\KW\[(.+?)\]/gi, function() {
+                keyWord = keyWordTable[arguments[1]];
+                return keyWord !== undefined ? keyWord : '\\' + arguments[0];
+            }.bind(this));
+            return $.call(this, text);
+        };
+    });
 })();
