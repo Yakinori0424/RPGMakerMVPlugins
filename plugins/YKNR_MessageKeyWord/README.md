@@ -1,16 +1,21 @@
-# YKNR_MessageKeyWord.js [Ver.1.0.0]
-簡易説明
+# YKNR_MessageKeyWord.js [Ver.2.0.1]
+ゲームでよく使うキーワードを登録し、  
+制御文字（\KW[***]）で呼び出せるようになります。
 
 ---
 
 <!-- ここからURL一覧 -->
-[LICENSE]: ./plugins/YKNR_MessageKeyWord/LICENSE
-[【Download】]: ./plugins/YKNR_MessageKeyWord/YKNR_MessageKeyWord.js
+[LICENSE]: ./LICENSE
+[【Download】]: ./YKNR_MessageKeyWord.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
-*右クリック → 名前を付けて保存* でプラグインをダウンロードできます。\
+*右クリック → 名前を付けて保存* でプラグインをダウンロードできます。  
 [【Download】][]
+
+---
+## 使用方法
+説明文など
 
 ---
 ## スクリーンショット
@@ -20,12 +25,8 @@
 ![](./res/YKNR_MessageKeyWord_04.jpg)
 
 ---
-## 使用方法
-説明文など
-
----
 ## License
-ライセンスは MIT License です。\
+ライセンスは MIT License です。  
 [LICENSE][]
 
 ---

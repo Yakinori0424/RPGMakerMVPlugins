@@ -4,25 +4,26 @@
 ---
 
 <!-- ここからURL一覧 -->
-[LICENSE]: ./plugins/PluginName/LICENSE
-[【Download】]: ./plugins/PluginName/PluginName.js
+[LICENSE]: ./LICENSE
+[【Download】]: ./PluginName.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
-*右クリック → 名前を付けて保存* でプラグインをダウンロードできます。\
+*右クリック → 名前を付けて保存* でプラグインをダウンロードできます。  
 [【Download】][]
-
----
-## スクリーンショット
-
 
 ---
 ## 使用方法
 説明文など
 
 ---
+## スクリーンショット
+![](./res/PluginName_01.jpg)
+
+
+---
 ## License
-ライセンスは MIT License です。\
+ライセンスは MIT License です。  
 [LICENSE][]
 
 ---
