@@ -4,11 +4,11 @@
 ---
 
 <!-- ここからURL一覧 -->
-[YKNR_MessageKeyWord.js]: /plugins/YKNR_MessageKeyWord/YKNR_MessageKeyWord.js
-[YKNR_ShopSettingsEx.js]: /plugins/YKNR_ShopSettingsEx/YKNR_ShopSettingsEx.js
-[YKNR_SlideInformation.js]: /plugins/YKNR_SlideInformation/YKNR_SlideInformation.js
-[YKNR_StringInterpolation.js]: /plugins/YKNR_StringInterpolation/YKNR_StringInterpolation.js
-[YKNR_SnapshotExporter.js]: /plugins/YKNR_SnapshotExporter/YKNR_SnapshotExporter.js
+[YKNR_MessageKeyWord.js]: /plugins/YKNR_MessageKeyWord
+[YKNR_ShopSettingsEx.js]: /plugins/YKNR_ShopSettingsEx
+[YKNR_SlideInformation.js]: /plugins/YKNR_SlideInformation
+[YKNR_StringInterpolation.js]: /plugins/YKNR_StringInterpolation
+[YKNR_SnapshotExporter.js]: /plugins/YKNR_SnapshotExporter
 <!-- ここまでURL一覧 -->
 
 ## プラグイン一覧
