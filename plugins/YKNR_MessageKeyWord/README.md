@@ -4,8 +4,8 @@
 ---
 
 <!-- ここからURL一覧 -->
-[LICENSE]: /YKNR_MessageKeyWord/LICENSE
-[【Download】]: /YKNR_MessageKeyWord/YKNR_MessageKeyWord.js
+[LICENSE]: ./plugins/YKNR_MessageKeyWord/LICENSE
+[【Download】]: ./plugins/YKNR_MessageKeyWord/YKNR_MessageKeyWord.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード

@@ -4,8 +4,8 @@
 ---
 
 <!-- ここからURL一覧 -->
-[LICENSE]: /PluginName/LICENSE
-[【Download】]: /PluginName/PluginName.js
+[LICENSE]: ./plugins/PluginName/LICENSE
+[【Download】]: ./plugins/PluginName/PluginName.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
