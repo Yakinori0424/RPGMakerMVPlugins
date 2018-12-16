@@ -1,11 +1,11 @@
-# PluginName [Ver.1.0.0]
+# PluginName.js [Ver.1.0.0]
 簡易説明
 
 ---
 
 <!-- ここからURL一覧 -->
-[LISENCE]: ./LISENCE
-[【Download】]: ./PluginName
+[LICENSE]: /PluginName/LICENSE
+[【Download】]: /PluginName/PluginName.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
@@ -14,17 +14,16 @@
 
 ---
 ## スクリーンショット
-下記の通り、MITライセンスです。\
-[LISENCE][]
+
 
 ---
 ## 使用方法
 説明文など
 
 ---
-## Lisence
-下記の通り、MITライセンスです。\
-[LISENCE][]
+## License
+ライセンスは MIT License です。\
+[LICENSE][]
 
 ---
 ## Author
