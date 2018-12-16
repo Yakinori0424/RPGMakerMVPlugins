@@ -1,17 +1,16 @@
-# PluginName
+# PluginName [Ver.1.0.0]
 簡易説明
 
 ---
 
 <!-- ここからURL一覧 -->
-[LISENCE]: ../LISENCE
-[【Download】]: ../YKNR_MessageKeyWord.js
+[LISENCE]: ./LISENCE
+[【Download】]: ./PluginName
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
 *右クリック → 名前を付けて保存* でプラグインをダウンロードできます。\
 [【Download】][]
-
 
 ---
 ## スクリーンショット
@@ -19,7 +18,7 @@
 [LISENCE][]
 
 ---
-## 詳細な使用方法
+## 使用方法
 説明文など
 
 ---
