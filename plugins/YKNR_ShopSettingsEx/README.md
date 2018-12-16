@@ -7,7 +7,7 @@
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: ./YKNR_ShopSettingsEx.js
+[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_ShopSettingsEx/YKNR_ShopSettingsEx.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード

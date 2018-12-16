@@ -5,7 +5,7 @@
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: ./PluginName.js
+[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/PluginName/PluginName.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード

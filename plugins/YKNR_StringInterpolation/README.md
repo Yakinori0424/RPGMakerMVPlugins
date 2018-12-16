@@ -8,8 +8,8 @@ String クラスに、式展開した文字列を返す関数を追加します�
 ---
 
 <!-- ここからURL一覧 -->
-[LICENSE]: /YKNR_StringInterpolation/LICENSE
-[【Download】]: /YKNR_StringInterpolation/YKNR_StringInterpolation.js
+[LICENSE]: ./LICENSE
+[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_StringInterpolation/YKNR_StringInterpolation.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード

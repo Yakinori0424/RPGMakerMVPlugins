@@ -6,7 +6,7 @@
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: ./YKNR_SlideInformation.js
+[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SlideInformation/YKNR_SlideInformation.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード

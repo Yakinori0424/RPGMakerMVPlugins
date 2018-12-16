@@ -9,7 +9,7 @@
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: ./YKNR_MessageKeyWord.js
+[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_MessageKeyWord/YKNR_MessageKeyWord.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード

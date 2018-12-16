@@ -6,8 +6,8 @@
 ---
 
 <!-- ここからURL一覧 -->
-[LICENSE]: /YKNR_SnapshotExporter/LICENSE
-[【Download】]: /YKNR_SnapshotExporter/YKNR_SnapshotExporter.js
+[LICENSE]: ./LICENSE
+[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SnapshotExporter/YKNR_SnapshotExporter.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
