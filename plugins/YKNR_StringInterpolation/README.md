@@ -18,8 +18,8 @@ String クラスに、式展開した文字列を返す関数を追加します�
 
 ---
 ## 使用方法
-文字列中の *${(Javascript Code)}*  が式展開を行うコードとして認識できます。  
-*(Javascript Code)* には、任意のJavascriptを記述します。  
+文字列中の `${(Javascript Code)}`  が式展開を行うコードとして認識できます。  
+`(Javascript Code)` には、任意のJavascriptを記述します。  
 このJavascriptの返り値が実際の文字列となります。  
 
 以下のイベントコマンドのテキストは、本プラグインの機能により式展開が可能になっています。
@@ -36,18 +36,39 @@ String クラスに、式展開した文字列を返す関数を追加します�
 
 <br>
 
----
-
+### 式展開関数
 通常は、上記の式展開用のフォーマットを記述しても普通の文字列として評価されますが、  
 本プラグインで追加した式展開を行った結果を返す関数 String.prototype.interpolation で  
 式展開後の文字列を返します。  
 
+~~~javascript
+    var message = '';
+    message += '現在のマップのIDは ${$gameMap.mapId()}\n';
+    message += '現在のマップの表示名は ${$gameMap.displayName()} です。';
 
-*(Javascript Code)* 部分をkeyとして扱い、  
+    console.log(message.interpolation());
+    // => 現在のマップのIDは 1
+    //    現在のマップの表示名は ダミーマップ です。
+~~~
+
+### テンプレート関数
+`(Javascript Code)` 部分をkeyとして扱い、  
 別オブジェクトのkeyから値を取得する関数 String.prototype.template もおまけで実装しています。  
 こちらも同様に、式展開後の文字列を返します。  
 
+~~~javascript
+    var message = '';
+    message += '現在のマップのIDは ${mapId}\n';
+    message += '現在のマップの表示名は ${abcdefg} です。';
 
+    var values = {};
+    values['mapId'] = $gameMap.mapId();
+    values['abcdefg'] = $gameMap.displayName();
+    
+    console.log(message.template(values));
+    // => 現在のマップのIDは 1
+    //    現在のマップの表示名は ダミーマップ です。
+~~~
 
 ---
 ## スクリーンショット
