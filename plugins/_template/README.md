@@ -18,8 +18,7 @@
 
 ---
 ## スクリーンショット
-![](./res/PluginName_01.jpg)
-
+![](./res/PluginName_01.jpg)<br><br>
 
 ---
 ## License
