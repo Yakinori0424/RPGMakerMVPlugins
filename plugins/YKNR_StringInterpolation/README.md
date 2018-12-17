@@ -17,16 +17,15 @@ String クラスに、式展開した文字列を返す関数を追加します�
 [【Download】][]
 
 ---
+## 使用方法
+説明文など
+
+---
 ## スクリーンショット
 ![](./res/YKNR_StringInterpolation_01.jpg)<br><br>
 ![](./res/YKNR_StringInterpolation_02.jpg)<br><br>
 ![](./res/YKNR_StringInterpolation_03.jpg)<br><br>
 ![](./res/YKNR_StringInterpolation_04.jpg)<br><br>
-
-
----
-## 使用方法
-説明文など
 
 ---
 ## License
