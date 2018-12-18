@@ -31,13 +31,13 @@ JavascriptではES6から使えるようになった、バッククオート(``)
 以下のテキストは、本プラグインの機能により式展開されます。
 * 各データベースのヘルプのテキスト
 * バトルログのテキスト
-* その他、convertEscapeCharacters を通したテキスト全て
+* その他、 `Window_Base.prototype.convertEscapeCharacters` を通したテキスト全て
 
 <br>
 
 ### 式展開関数
 通常は、上記の式展開用のフォーマットを記述しても普通の文字列として評価されますが、  
-内挿された式を展開しその結果を返す関数 String.prototype.interpolation で  
+内挿された式を展開しその結果を返す関数 `String.prototype.interpolation` で  
 式展開後の文字列を返します。  
 
 ~~~javascript
@@ -52,7 +52,7 @@ JavascriptではES6から使えるようになった、バッククオート(``)
 
 ### テンプレート関数
 `(Javascript Code)` 部分をkeyとして扱い、  
-別オブジェクトのkeyから値を取得する関数 String.prototype.template もおまけで実装しています。  
+別オブジェクトのkeyから値を取得する関数 `String.prototype.template` もおまけで実装しています。  
 こちらも同様に、式展開後の文字列を返します。  
 
 ~~~javascript
