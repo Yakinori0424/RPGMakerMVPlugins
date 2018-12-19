@@ -31,9 +31,9 @@
 |関数|説明|
 |:--|:--|
 |Sprite.prototype.exportPNG()|このスプライトを png でダウンロードします。|
-|Sprite.prototype.exportJPG(quality)|このスプライトを jpg でダウンロードします。<br>品質を0-100で指定することもできます。|
+|Sprite.prototype.exportJPG(quality)|このスプライトを jpg でダウンロードします。引数で品質を*0-100*で指定できます。<br>未指定の場合は、プラグインパラメータの **"JPGの品質のデフォルト値"**  の値になります。|
 |Window.prototype.exportPNG()|このウィンドウを png でダウンロードします。|
-|Window.prototype.exportJPG(quality)|このウィンドウを jpg でダウンロードします。<br>品質を0-100で指定することもできます。|
+|Window.prototype.exportJPG(quality)|このウィンドウを jpg でダウンロードします。引数で品質を*0-100*で指定できます。<br>未指定の場合は、プラグインパラメータの **"JPGの品質のデフォルト値"**  の値になります。|
 
 ---
 ## License
