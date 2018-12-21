@@ -1,4 +1,4 @@
-# YKNR_SnapshotExporter.js [Ver.1.0.0]
+# YKNR_SnapshotExporter.js [Ver.1.0.1]
 スクリーンショット機能の他、ウィンドウのみ/スプライトのみを  
 画像ファイルとしてダウンロードできる関数を追加します。  
 開発用に作ったこともあり、スクリーンショット以外に関してはJavaScriptの知識が多少必要になります。  

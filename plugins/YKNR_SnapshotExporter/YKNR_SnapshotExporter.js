@@ -1,5 +1,5 @@
 //============================================================================
-// YKNR_SnapshotExporter.js - ver.1.0.0
+// YKNR_SnapshotExporter.js - ver.1.0.1
 // ---------------------------------------------------------------------------
 // Copyright (c) 2018 Yakinori
 // This software is released under the MIT License.
@@ -33,7 +33,6 @@
  * @param ScreenshotKeyCode
  * @text スクリーンショットキー
  * @desc スクリーンショットを行うためのショートカットを設定します。
- * @default 0
  * @type select
  * @option none
  * @value 0
@@ -61,12 +60,12 @@
  * @value 122
  * @option F12
  * @value 123
+ * @default 0
  * 
  * @param ScreenshotModifierKey
  * @text 装飾キー
  * @desc スクリーンショットを行うための装飾キーを設定します。
  * ここで指定されたキーを同時に押さないと撮れません。
- * @default 0
  * @type select
  * @option none
  * @value 0
@@ -84,17 +83,18 @@
  * @value 6
  * @option Ctrl + Shift + Alt
  * @value 7
- * @parent ScreenshotFuncKey
+ * @default 0
+ * @parent ScreenshotKeyCode
  * 
  * @param ScreenshotFormat
  * @text 画像フォーマット
  * @desc ショートカットキーでスクリーンショットを行った場合の
  * 画像フォーマットを設定します。
- * @default png
  * @type select
  * @option png
  * @option jpg
- * @parent ScreenshotFuncKey
+ * @default png
+ * @parent ScreenshotKeyCode
  * 
  * @help
  * ===========================================================================
@@ -190,8 +190,15 @@
  * ===========================================================================
  * 
  * ---------------------------------------------------------------------------
+ *【その他】
+ * <!> Bitmap.snap を再定義しています。
+ *
+ * ---------------------------------------------------------------------------
  *【更新履歴】
- * [2018/12/16] [1.0.0] 公開
+ * [2018/12/16] [1.0.0] Twitterで先行公開
+ * [2018/12/22] [1.0.1] プラグインパラメータの親設定のミス修正
+ *                      Bitmap.snapの再定義をヘルプに明記
+ *                      Bitmap.snapの再定義チェックを追加
  *
  * ===========================================================================
  * [Blog]   : http://mata-tuku.ldblog.jp/
@@ -348,47 +355,50 @@
 
 
     //------------------------------------------------------------------------
-    /**
-     * Takes a snapshot of the game screen and returns a new bitmap object.\
-     * 出力するビットマップの幅と高さを指定できるように拡張しています.\
-     * それぞれが未指定の場合は, 従来のように Graphics.width, Graphics.height となります.\
-     * また, 出力前の元々の幅と高さをさらに指定することで,\
-     * その値を元にビットマップの幅と高さに合わせて拡大率を調整します.\
-     * こちらの指定がない場合は, ビットマップの幅と高さと同値となり, 拡大率を変えません.
-     *
-     * @static
-     * @param {Stage} stage The stage object
-     * @param {number} dw 出力するビットマップの幅
-     * @param {number} dh 出力するビットマップの高さ
-     * @param {number} cw 元の幅
-     * @param {number} ch 元の高さ
-     * @return {Bitmap}
-     */
-    Bitmap.snap = function Bitmap_snap(stage, dw = Graphics.width, dh = Graphics.height, cw = dw, ch = dh) {
-        const bitmap = new Bitmap(dw, dh);
-        if (stage) {
-            const context = bitmap._context;
-            const renderTexture = PIXI.RenderTexture.create(dw, dh);
-            const last_sx = stage.scale.x;
-            const last_sy = stage.scale.y;
-            stage.scale.x = dw / cw;
-            stage.scale.y = dh / ch;
-            Graphics._renderer.render(stage, renderTexture);
-            stage.worldTransform.identity();
-            stage.scale.x = last_sx;
-            stage.scale.y = last_sy;
-            let canvas = null;
-            if (Graphics.isWebGL()) {
-                canvas = Graphics._renderer.extract.canvas(renderTexture);
-            } else {
-                canvas = renderTexture.baseTexture._canvasRenderTarget.canvas;
+
+    if (Bitmap.snap.name !== 'YKNR_Bitmap_snap') {
+        /**
+         * Takes a snapshot of the game screen and returns a new bitmap object.\
+         * 出力するビットマップの幅と高さを指定できるように拡張しています.\
+         * それぞれが未指定の場合は, 従来のように Graphics.width, Graphics.height となります.\
+         * また, 出力前の元々の幅と高さをさらに指定することで,\
+         * その値を元にビットマップの幅と高さに合わせて拡大率を調整します.\
+         * こちらの指定がない場合は, ビットマップの幅と高さと同値となり, 拡大率を変えません.
+         *
+         * @static
+         * @param {Stage} stage The stage object
+         * @param {number} dw 出力するビットマップの幅
+         * @param {number} dh 出力するビットマップの高さ
+         * @param {number} cw 元の幅
+         * @param {number} ch 元の高さ
+         * @return {Bitmap}
+         */
+        Bitmap.snap = function YKNR_Bitmap_snap(stage, dw = Graphics.width, dh = Graphics.height, cw = dw, ch = dh) {
+            const bitmap = new Bitmap(dw, dh);
+            if (stage) {
+                const context = bitmap._context;
+                const renderTexture = PIXI.RenderTexture.create(dw, dh);
+                const last_sx = stage.scale.x;
+                const last_sy = stage.scale.y;
+                stage.scale.x = dw / cw;
+                stage.scale.y = dh / ch;
+                Graphics._renderer.render(stage, renderTexture);
+                stage.worldTransform.identity();
+                stage.scale.x = last_sx;
+                stage.scale.y = last_sy;
+                let canvas = null;
+                if (Graphics.isWebGL()) {
+                    canvas = Graphics._renderer.extract.canvas(renderTexture);
+                } else {
+                    canvas = renderTexture.baseTexture._canvasRenderTarget.canvas;
+                }
+                context.drawImage(canvas, 0, 0);
+                renderTexture.destroy({ destroyBase: true });
+                bitmap._setDirty();
             }
-            context.drawImage(canvas, 0, 0);
-            renderTexture.destroy({ destroyBase: true });
-            bitmap._setDirty();
-        }
-        return bitmap;
-    };
+            return bitmap;
+        };
+    }
 
     /**
      * PIXIのオブジェクトの内容をビットマップに変換して返します.\
