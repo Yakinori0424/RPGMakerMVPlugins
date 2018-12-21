@@ -9,6 +9,7 @@ JavascriptではES6から使えるようになった、バッククオート(``)
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
 [【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_StringInterpolation/YKNR_StringInterpolation.js
+[LICENSE]: ./LICENSE
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
@@ -71,10 +72,19 @@ JavascriptではES6から使えるようになった、バッククオート(``)
 
 ---
 ## スクリーンショット
-![](./res/YKNR_StringInterpolation_01.jpg)<br><br>
-![](./res/YKNR_StringInterpolation_02.jpg)<br><br>
-![](./res/YKNR_StringInterpolation_03.jpg)<br><br>
-![](./res/YKNR_StringInterpolation_04.jpg)<br><br>
+![](./res/YKNR_StringInterpolation_01.jpg)  
+例えばこんな感じにメッセージと選択肢に式を内挿する。
+<br><br>
+
+![](./res/YKNR_StringInterpolation_02.jpg)  
+イベント名と現在地に展開されてメッセージに反映される。  
+しかし式が長くなりがちなので、汎用的なものに関しては他のスクリプトなどで追加した制御文字を扱う方が賢い。
+<br><br>
+
+![](./res/YKNR_StringInterpolation_03.jpg)  
+選択肢も式展開に対応。  
+ここには独自スクリプトの内容を選択肢に反映する術が無かったため、こちらは有用ではないだろうか。
+<br><br>
 
 ---
 ## License
