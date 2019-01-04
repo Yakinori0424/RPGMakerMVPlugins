@@ -51,7 +51,7 @@
 
 ---
 ## スクリーンショット
-[](./res/YKNR_SaveThumbnail_01.jpg)<br><br>
+![](./res/YKNR_SaveThumbnail_01.jpg)<br><br>
 
 ---
 ## License
