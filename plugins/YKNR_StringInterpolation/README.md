@@ -96,3 +96,4 @@ JavascriptではES6から使えるようになった、バッククオート(``)
 焼きノリ
 [[Twitter](https://twitter.com/Noritake0424)]
 [[Blog](http://mata-tuku.ldblog.jp/)]
+[[Github](https://github.com/Yakinori0424/RPGMakerMVPlugins)]
