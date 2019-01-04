@@ -9,6 +9,7 @@
 [YKNR_SlideInformation.js]: /plugins/YKNR_SlideInformation
 [YKNR_StringInterpolation.js]: /plugins/YKNR_StringInterpolation
 [YKNR_SnapshotExporter.js]: /plugins/YKNR_SnapshotExporter
+[YKNR_SaveThumbnail.js]: /plugins/YKNR_SaveThumbnail
 <!-- ここまでURL一覧 -->
 
 ## プラグイン一覧
@@ -19,6 +20,7 @@
 |[YKNR_SlideInformation.js][]|テキストを右からスライドインさせるお知らせウィンドウ。| 2.0.0 |
 |[YKNR_StringInterpolation.js][]|String クラスに、式展開した文字列を返す<br>interpolation関数, template関数 を追加します。| 1.0.0 |
 |[YKNR_SnapshotExporter.js][]|ウィンドウのみ/スプライトのみを<br>画像ファイルとしてダウンロードできる関数を追加します。| 1.0.1 |
+|[YKNR_SaveThumbnail.js][]|セーブファイルにサムネイル用の画像を保存し、<br>セーブ/ロード画面でファイル毎にサムネイルを表示します。| 1.0.0 |
 
 ---
 ## Author
