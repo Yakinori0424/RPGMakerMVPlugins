@@ -1,5 +1,5 @@
 //============================================================================
-// YKNR_SaveThumbnail.js - ver.1.0.0
+// YKNR_SaveThumbnail.js - ver.1.1.0
 // ---------------------------------------------------------------------------
 // Copyright (c) 2019 Yakinori
 // This software is released under the MIT License.
@@ -21,6 +21,8 @@
  *
  * @param SnapSettings
  * @text サムネイルの保存設定
+ * @desc 階層分けのために用意したパラメータなので、
+ * ここには何も設定しないでください。
  *
  * @param ThumbQuality
  * @text 画質の設定
@@ -161,6 +163,8 @@
  * ---------------------------------------------------------------------------
  *【更新履歴】
  * [2019/01/04] [1.0.0] 公開
+ * [2019/12/**] [1.1.0] 「ファイルリスト内に表示」、「別ウィンドウの表示設定」
+ *   が機能していない問題の修正
  *
  * ===========================================================================
  * [Blog]   : http://mata-tuku.ldblog.jp/
@@ -259,16 +263,13 @@
     /**
      * セーブデータのサムネイルで使用するユニークなキーを返します
      *
-     * @param {Object} info セーブデータのグローバルデータ
+     * @param {number} savefileId セーブファイルのID
      * @return {string} 
     */
-    function generateThumbUniqueKey(info) {
-        if (info) {
-            const globalInfo = DataManager.loadGlobalInfo();
-            const savefileId = globalInfo.findIndex((gi) => gi === info);
-            if (savefileId > 0) {
-                return savefileId + ':' + info.timestamp;
-            }
+    function generateThumbUniqueKey(savefileId) {
+        if (DataManager.isThisGameFile(savefileId)) {
+            const info = DataManager.loadSavefileInfo(savefileId);
+            return savefileId + ':' + info.timestamp;
         }
         return undefined;
     };
@@ -322,15 +323,55 @@
     //------------------------------------------------------------------------
 
     /**
+     * セーブファイルがこのゲームの何番目のものか取得します.
+     *
+     * @param {Object} info セーブデータ
+     * @return {number} 
+     */
+    DataManager.getSavefileId = function(info) {
+        const globalInfo = this.loadGlobalInfo();
+        if (globalInfo) {
+            for (let id = 1, l = globalInfo.length; id < l; id++) {
+                if (this.isThisGameFile(id) && this.isCompereSavefile(info, globalInfo[id])) {
+                    return id;
+                }
+            }
+        }
+        return -1;
+    };
+
+    /**
+     * セーブファイルが同じものか判定します.
+     *
+     * @param {Object} a セーブデータA
+     * @param {Object} b セーブデータB
+     * @return {boolean} 
+     */
+    DataManager.isCompereSavefile = function(a, b) {
+        // NOTE : thumbnailは長くなりがちなので比較しなくてよいかなという判断
+        return (a.globalId === b.globalId
+            && a.title === b.title
+            && a.timestamp === b.timestamp
+            && a.playtime === b.playtime
+            // && a.thumbnail === b.thumbnail
+            && a.characters.equals(b.characters)
+            && a.faces.equals(b.faces)
+        );
+    };
+
+
+    //------------------------------------------------------------------------
+
+    /**
      * Base64形式用のキャッシュキーを返します.\
      * データURIは長くなるので, ユニークなキーを指定して代用します.
      *
-     * @param {number|string} uniqueKey 任意のキー
+     * @param {number|string} cacheKey 任意のキー
      * @param {number} hue 色相
      * @return {string} 
      */
-    ImageManager._generateBase64CacheKey = function(uniqueKey, hue) {
-        return 'Base64:' + uniqueKey + ':' + hue;
+    ImageManager._generateBase64CacheKey = function(cacheKey, hue) {
+        return 'Base64:' + cacheKey + ':' + hue;
     };
 
     /**
@@ -350,13 +391,13 @@
      * キャッシュに対応しています.
      *
      * @param {string} src Base64形式の文字列
-     * @param {number|string} uniqueKey キャッシュに使用する任意のキー
+     * @param {number|string} cacheKey キャッシュに使用する任意のキー
      * @param {number} hue 色相
      * @return {Bitmap} 
      */
-    ImageManager.loadBase64Bitmap = function(src, uniqueKey, hue = 0) {
-        const key = this._generateBase64CacheKey(uniqueKey, hue);
-        let bitmap = this._imageCache.get(key);
+    ImageManager.loadBase64Bitmap = function(src, cacheKey, hue = 0) {
+        const b64cacheKey = this._generateBase64CacheKey(cacheKey, hue);
+        let bitmap = this._imageCache.get(b64cacheKey);
         if (!bitmap) {
             bitmap = Bitmap.load(src);
             if (this._callCreationHook) {
@@ -366,12 +407,44 @@
             bitmap.addLoadListener(function() {
                 bitmap.rotateHue(hue);
             });
-            this._imageCache.add(key, bitmap);
+            this._imageCache.add(b64cacheKey, bitmap);
         } else if (!bitmap.isReady()) {
             bitmap.decode();
         }
         return bitmap;
     };
+
+    /**
+     * Base64形式の文字列からビットマップをリクエストします.\
+     * キャッシュに対応しています.
+     *
+     * @param {string} src Base64形式の文字列
+     * @param {number|string} cacheKey キャッシュに使用する任意のキー
+     * @param {number} hue 色相
+     * @return {Bitmap} 
+     */
+    ImageManager.requestBase64Bitmap = function(src, cacheKey, hue = 0) {
+        const b64cacheKey = this._generateBase64CacheKey(cacheKey, hue);
+        let bitmap = this._imageCache.get(b64cacheKey);
+        if (!bitmap) {
+            bitmap = Bitmap.request(src);
+            if (this._callCreationHook) {
+                // community-1.3 の プログレスバー 対応
+                this._callCreationHook(bitmap);
+            }
+            bitmap.addLoadListener(function() {
+                bitmap.rotateHue(hue);
+            });
+            this._imageCache.add(b64cacheKey, bitmap);
+            this._requestQueue.enqueue(b64cacheKey, bitmap);
+        } else {
+            this._requestQueue.raisePriority(b64cacheKey);
+        }
+        return bitmap;
+    };
+
+
+    //------------------------------------------------------------------------
 
     /**
      * セーブファイルからサムネイルをロードします.
@@ -382,40 +455,11 @@
      */
     ImageManager.loadThumbnail = function(savefileId) {
         const info = DataManager.loadSavefileInfo(savefileId);
-        const uniqueKey = generateThumbUniqueKey(info);
-        if (info && info.thumbnail && uniqueKey) {
-            return ImageManager.loadBase64Bitmap(info.thumbnail, uniqueKey);
+        const cacheKey = generateThumbUniqueKey(savefileId);
+        if (info && info.thumbnail && cacheKey) {
+            return ImageManager.loadBase64Bitmap(info.thumbnail, cacheKey);
         }
         return this.loadEmptyBitmap();
-    };
-
-    /**
-     * Base64形式の文字列からビットマップをリクエストします.\
-     * キャッシュに対応しています.
-     *
-     * @param {string} src Base64形式の文字列
-     * @param {number|string} uniqueKey キャッシュに使用する任意のキー
-     * @param {number} hue 色相
-     * @return {Bitmap} 
-     */
-    ImageManager.requestBase64Bitmap = function(src, uniqueKey, hue = 0) {
-        const key = this._generateBase64CacheKey(uniqueKey, hue);
-        let bitmap = this._imageCache.get(key);
-        if (!bitmap) {
-            bitmap = Bitmap.request(src);
-            if (this._callCreationHook) {
-                // community-1.3 の プログレスバー 対応
-                this._callCreationHook(bitmap);
-            }
-            bitmap.addLoadListener(function() {
-                bitmap.rotateHue(hue);
-            });
-            this._imageCache.add(key, bitmap);
-            this._requestQueue.enqueue(key, bitmap);
-        } else {
-            this._requestQueue.raisePriority(key);
-        }
-        return bitmap;
     };
 
     /**
@@ -427,9 +471,9 @@
      */
     ImageManager.requestThumbnail = function(savefileId) {
         const info = DataManager.loadSavefileInfo(savefileId);
-        const uniqueKey = generateThumbUniqueKey(info);
-        if (info && info.thumbnail && uniqueKey) {
-            return ImageManager.requestBase64Bitmap(info.thumbnail, uniqueKey);
+        const cacheKey = generateThumbUniqueKey(savefileId);
+        if (info && info.thumbnail && cacheKey) {
+            return this.requestBase64Bitmap(info.thumbnail, cacheKey);
         }
         return this.loadEmptyBitmap();
     };
@@ -442,11 +486,12 @@
      * @return {Bitmap} 
      */
     ImageManager.loadBusyThumbBitmap = function(width, height) {
-        let empty = this._imageCache.get('emptyThumb:' + width + '_' + height);
+        const cacheKey = 'busyThumb:' + width + '_' + height;
+        let empty = this._imageCache.get(cacheKey);
         if (!empty) {
             empty = new Bitmap(width, height);
             empty.fillAll('#000000');
-            this._imageCache.add('emptyThumb', empty);
+            this._imageCache.add(cacheKey, empty);
         }
         return empty;
     };
@@ -520,6 +565,15 @@
         };
     });
 
+    monkeyPatch(DataManager, 'loadSavefileImages', function($) {
+        return function(info) {
+            $.call(this, info);
+            if (info.thumbnail) {
+                ImageManager.requestThumbnail(info);
+            }
+        };
+    });
+
 
     //------------------------------------------------------------------------
 
@@ -527,32 +581,47 @@
      * Base64形式の文字列データから画像を読み込んで描画する.
      * 
      * @param {string} src Base64形式の文字列
-     * @param {number|string} uniqueKey キャッシュに使用する任意のキー
+     * @param {number|string} cacheKey キャッシュに使用する任意のキー
      * @param {number} x 描画 X 座標
      * @param {number} y 描画 Y 座標
      * @param {number} width 描画する幅
      * @param {number} height 描画する高さ
      * @param {Function} onDrawAfter 描画後の処理
      */
-    Window_Base.prototype.drawBase64Data = function(src, uniqueKey, x, y, width = 0, height = 0, onDrawAfter = null) {
-        const bitmap = ImageManager.loadBase64Bitmap(src, uniqueKey);
-        const saveOpacity = this.contents.paintOpacity;
+    Window_Base.prototype.drawBase64Data = function(src, cacheKey, x, y, width = 0, height = 0, onDrawAfter = null) {
+        const bitmap = ImageManager.loadBase64Bitmap(src, cacheKey);
+        const lastOpacity = this.contents.paintOpacity;
         if (!bitmap.isReady() && width > 0 && height > 0) {
             this.contents.fillRect(x, y, width, height, '#000000');
         }
         bitmap.addLoadListener(() => {
-            const bw = bitmap.width;
-            const bh = bitmap.height;
-            width = width || bw;
-            height = height || bh;
-            const lastOpacity = this.contents.paintOpacity;
-            this.contents.paintOpacity = saveOpacity;
-            this.contents.blt(bitmap, 0, 0, bw, bh, x, y, width, height);
-            if (onDrawAfter) {
-                onDrawAfter();
-            }
-            this.contents.paintOpacity = lastOpacity;
+            this._onLoadBase64Data(bitmap, x, y, lastOpacity, width, height, onDrawAfter = null);
         });
+    };
+
+    /**
+     * drawBase64Data のイベントリスナー関数.
+     * 
+     * @param {Bitmap} bitmap Base64形式から生成されたビットマップ
+     * @param {number} x 描画 X 座標
+     * @param {number} y 描画 Y 座標
+     * @param {number} lastOpacity 描画前の透明度
+     * @param {number} width 描画する幅
+     * @param {number} height 描画する高さ
+     * @param {Function} onDrawAfter 描画後の処理
+     */
+    Window_Base.prototype._onLoadBase64Data = function(bitmap, x, y, lastOpacity, width, height, onDrawAfter = null) {
+        const bw = bitmap.width;
+        const bh = bitmap.height;
+        width = width || bw;
+        height = height || bh;
+        //const lastOpacity = this.contents.paintOpacity;
+        this.contents.paintOpacity = lastOpacity;
+        this.contents.blt(bitmap, 0, 0, bw, bh, x, y, width, height);
+        if (onDrawAfter) {
+            onDrawAfter();
+        }
+        //this.contents.paintOpacity = lastOpacity;
     };
 
     /**
@@ -561,18 +630,18 @@
      * 描画位置や透明度がずれることがあるのでその対策込みで再定義.
      * 
      * @param {string} src Base64形式の文字列
-     * @param {number|string} uniqueKey キャッシュに使用する任意のキー
+     * @param {number|string} cacheKey キャッシュに使用する任意のキー
      * @param {number} x 描画 X 座標
      * @param {number} y 描画 Y 座標
      * @param {number} width 描画する幅
      * @param {number} height 描画する高さ
      * @param {Function} onDrawAfter 描画後の処理
      */
-    Window_Selectable.prototype.drawBase64Data = function(src, uniqueKey, x, y, width = 0, height = 0, onDrawAfter = null) {
+    Window_Selectable.prototype.drawBase64Data = function(src, cacheKey, x, y, width = 0, height = 0, onDrawAfter = null) {
+        const bitmap = ImageManager.loadBase64Bitmap(src, cacheKey);
+        const lastOpacity = this.contents.paintOpacity;
         const lastTopRow = this.topRow();
         const lastLeftCol = Math.floor(this._scrollX / this.itemWidth());
-        const saveOpacity = this.contents.paintOpacity;
-        const bitmap = ImageManager.loadBase64Bitmap(src, uniqueKey);
         if (!bitmap.isReady() && width > 0 && height > 0) {
             this.contents.fillRect(x, y, width, height, '#000000');
         }
@@ -580,17 +649,7 @@
             if (this.topRow() !== lastTopRow || Math.floor(this._scrollX / this.itemWidth()) !== lastLeftCol) {
                 return;
             }
-            const bw = bitmap.width;
-            const bh = bitmap.height;
-            width = width || bw;
-            height = height || bh;
-            const lastOpacity = this.contents.paintOpacity;
-            this.contents.paintOpacity = saveOpacity;
-            this.contents.blt(bitmap, 0, 0, bw, bh, x, y, width, height);
-            if (onDrawAfter) {
-                onDrawAfter();
-            }
-            this.contents.paintOpacity = lastOpacity;
+            this._onLoadBase64Data(bitmap, x, y, lastOpacity, width, height, onDrawAfter = null);
         });
     };
 
@@ -676,8 +735,7 @@
          * @param {boolean} valid 
          */
         Window_SavefileList.prototype.drawThumbnail = function(info, thumbRect, valid) {
-            const globalInfo = DataManager.loadGlobalInfo();
-            const savefileId = globalInfo.findIndex((gi) => gi === info);
+            const savefileId = DataManager.getSavefileId(info);
             if (savefileId > 0 && info.thumbnail) {
                 let sprite = this._thumbContainer.children.find((s) => !s.visible);
                 sprite.visible = true;
@@ -690,8 +748,12 @@
                     sprite.bitmap = empty;
                 }
                 thunmbBitmap.addLoadListener(() => {
-                    sprite.bitmap = thunmbBitmap;
-                    sprite.bitmap.paintOpacity = valid ? 255 : this.translucentOpacity();
+                    // 読み込み終わったときにリスト表示範囲内であれば描画
+                    if (this.topIndex() < savefileId &&
+                        this.topIndex() + this.maxPageItems() >= savefileId) {
+                        sprite.bitmap = thunmbBitmap;
+                        sprite.bitmap.paintOpacity = valid ? 255 : this.translucentOpacity();
+                    }
                 });
             }
         };
@@ -699,17 +761,17 @@
 
     // 任意のウィンドウに, サムネイル表示を行う処理を追加します
     if (otherWindowClass) {
-        /** @type{Window_Base} */
-        const WindowClass = eval(otherWindowClass);
+        /** @type {Window_Base} */
+        const AnyWindowClass = eval(otherWindowClass);
 
-        if (!(WindowClass instanceof Window_Base)) {
-            throw new Error(WindowClass + ': This is not a class extended \'Window_Base\' class');
+        if (!AnyWindowClass || !AnyWindowClass.prototype || !(AnyWindowClass.prototype instanceof Window_Base)) {
+            throw new Error(AnyWindowClass + ': This is not a class extended \'Window_Base\' class');
         }
 
-        WindowClass.prototype._thumbnailX = eval('(function(rect, width) { return %1; });'.format(thumbOtherPosX));
-        WindowClass.prototype._thumbnailY = eval('(function(rect, height) { return %1; });'.format(thumbOtherPosY));
+        AnyWindowClass.prototype._thumbnailX = eval('(function(rect, width) { return %1; });'.format(thumbOtherPosX));
+        AnyWindowClass.prototype._thumbnailY = eval('(function(rect, height) { return %1; });'.format(thumbOtherPosY));
 
-        monkeyPatch(WindowClass.prototype, 'initialize', function($) {
+        monkeyPatch(AnyWindowClass.prototype, 'initialize', function($) {
             return function() {
                 $.call(this, ...arguments);
                 if (SceneManager._scene instanceof Scene_File) {
@@ -718,7 +780,7 @@
             };
         });
 
-        WindowClass.prototype._createThumbnail = function() {
+        AnyWindowClass.prototype._createThumbnail = function() {
             const contentsIndex = this.children.indexOf(this._windowContentsSprite);
             this._thumbContainer = new PIXI.Container();
             this.addChildAt(this._thumbContainer, contentsIndex);
@@ -735,14 +797,14 @@
             this._refreshThumbnailParts();
         };
 
-        monkeyPatch(WindowClass.prototype, '_refreshContents', function($) {
+        monkeyPatch(AnyWindowClass.prototype, '_refreshContents', function($) {
             return function() {
                 $.call(this);
                 this._refreshThumbnailParts();
             };
         });
 
-        WindowClass.prototype._refreshThumbnailParts = function() {
+        AnyWindowClass.prototype._refreshThumbnailParts = function() {
             if (this._thumbContainer) {
                 this._thumbContainer.x = this.padding;
                 this._thumbContainer.y = this.padding;
@@ -755,7 +817,7 @@
             }
         };
 
-        monkeyPatch(WindowClass.prototype, 'update', function($) {
+        monkeyPatch(AnyWindowClass.prototype, 'update', function($) {
             return function() {
                 if ($) {
                     $.call(this);
@@ -766,7 +828,8 @@
             };
         });
 
-        WindowClass.prototype._updateThumbnail = function() {
+        AnyWindowClass.prototype._updateThumbnail = function() {
+            /** @type {Window_SavefileList} */
             const list = SceneManager._scene._listWindow;
             if (list) {
                 const savefileId = list.index() + 1;
@@ -776,14 +839,14 @@
                     let thumbRect = new Rectangle();
                     thumbRect.width = Math.floor(thumbSaveWidth * thumbOtherScale);
                     thumbRect.height = Math.floor(thumbSaveHeight * thumbOtherScale);
-                    thumbRect.x = this.thumbnailX(rect, thumbRect.width);
-                    thumbRect.y = this.thumbnailY(rect, thumbRect.height);
+                    thumbRect.x = this._thumbnailX(rect, thumbRect.width);
+                    thumbRect.y = this._thumbnailY(rect, thumbRect.height);
                     this._drawThumbnail(thumbRect);
                 }
             }
         };
 
-        WindowClass.prototype._drawThumbnail = function(thumbRect) {
+        AnyWindowClass.prototype._drawThumbnail = function(thumbRect) {
             const savefileId = this._savefileId;
             const info = DataManager.loadSavefileInfo(savefileId);
             if (this._savefileId > 0 && info && info.thumbnail) {
@@ -798,6 +861,7 @@
                     this._thumbSprite.bitmap = empty;
                 }
                 thunmbBitmap.addLoadListener(() => {
+                    // 読み込み終わって位置が変わっていないなら描画
                     if (savefileId === this._savefileId) {
                         this._thumbSprite.bitmap = thunmbBitmap;
                         this._thumbSprite.bitmap.paintOpacity = valid ? 255 : this.translucentOpacity();
@@ -809,45 +873,6 @@
             }
         };
     }
-
-    //--------------------------------------------------------------------
-
-    monkeyPatch(Window_SavefileList.prototype, 'refresh', function($) {
-        return function() {
-            if (this._enabledRefresh) {
-                $.call(this);
-            }
-        };
-    });
-
-    monkeyPatch(Scene_File.prototype, 'create', function($) {
-        return function() {
-            $.call(this);
-            this._listWindow.deactivate();
-            this.requestThumbnail();
-        };
-    });
-
-    /**
-     * セーブデータのサムネイル画像をリクエストする
-     */
-    Scene_File.prototype.requestThumbnail = function() {
-        let info;
-        for (let id = 1, l = this._listWindow.maxItems(); id <= l; id++) {
-            info = DataManager.loadSavefileInfo(id);
-            if (info && info.thumbnail) {
-                ImageManager.requestThumbnail(id);
-            }
-        }
-    };
-
-    monkeyPatch(Scene_File.prototype, 'start', function($) {
-        return function() {
-            this._listWindow._enabledRefresh = true;
-            $.call(this);
-            this._listWindow.activate();
-        };
-    });
 
 
     //------------------------------------------------------------------------
