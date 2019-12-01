@@ -332,8 +332,10 @@
         const globalInfo = this.loadGlobalInfo();
         if (globalInfo) {
             for (let id = 1, l = globalInfo.length; id < l; id++) {
-                if (this.isThisGameFile(id) && this.isCompereSavefile(info, globalInfo[id])) {
-                    return id;
+                if (this.isThisGameFile(id)) {
+                    if (this.isEqualSavefile(info, globalInfo[id])) {
+                        return id;
+                    }
                 }
             }
         }
@@ -347,7 +349,7 @@
      * @param {Object} b セーブデータB
      * @return {boolean} 
      */
-    DataManager.isCompereSavefile = function(a, b) {
+    DataManager.isEqualSavefile = function(a, b) {
         // NOTE : thumbnailは長くなりがちなので比較しなくてよいかなという判断
         return (a.globalId === b.globalId
             && a.title === b.title
