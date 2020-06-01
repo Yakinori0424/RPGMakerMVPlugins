@@ -26,4 +26,4 @@
 ## Author
 焼きノリ
 [[Twitter](https://twitter.com/Noritake0424)]
-[[Blog](http://mata-tuku.ldblog.jp/)]
+[[欲しいもの](http://www.amazon.co.jp/registry/wishlist/3HAY7QN91DUF2/ref=cm_sw_r_tw_ws_x_i3sGyb08ST7P4)]
