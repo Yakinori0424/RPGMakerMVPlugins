@@ -384,7 +384,7 @@
     var _Window_ShopSell_prototype_isEnabled = Window_ShopSell.prototype.isEnabled;
     Window_ShopSell.prototype.isEnabled = function(item) {
         var result = _Window_ShopSell_prototype_isEnabled.call(this, item);
-        if (result && _vendOnly && this._itemFilterList) {
+        if (result && _vendOnly && this._itemFilterList.length > 0) {
             return this._itemFilterList.contains(item);
         }
         return result;
@@ -396,12 +396,10 @@
      * @param {Array<Any>} shopGoods : ショップの商品リスト
      */
     Window_ShopSell.prototype.setFilter = function(shopGoods) {
-        this._itemFilterList = null;
+        this._itemFilterList = [];
 
         // ひとつでも設定されているのであれば, フィルタリング有効化.
         if (_vendOnly && shopGoods && shopGoods.length > 0) {
-            this._itemFilterList = [];
-
             shopGoods.forEach(function(goods) {
                 var item = null;
                 switch (goods[0]) {
