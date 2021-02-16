@@ -1,4 +1,4 @@
-# YKNR_SaveThumbnail.js [Ver.1.1.1]
+# YKNR_SaveThumbnail.js [Ver.1.1.2]
 セーブデータにマップの現在地の画像をサムネイル用に保存し、  
 セーブ画面/ロード画面にそのサムネイルを表示する機能を追加します。  
 

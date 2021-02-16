@@ -1,5 +1,5 @@
 //============================================================================
-// YKNR_SaveThumbnail.js - ver.1.1.1
+// YKNR_SaveThumbnail.js - ver.1.1.2
 // ---------------------------------------------------------------------------
 // Copyright (c) 2019 Yakinori
 // This software is released under the MIT License.
@@ -167,6 +167,7 @@
  *   が機能していない問題の修正
  * [2020/05/28] [1.1.1] デプロイメント時に「画像の暗号化」にチェックを入れて
  *   出力されたゲームでサムネイル表示時にエラーが出ていた問題の修正
+ * [2021/02/16] [1.1.2] Window_SavefileListでのサムネイルのコンテナ数の調整
  *
  * ===========================================================================
  * [Blog]   : http://mata-tuku.ldblog.jp/
@@ -467,14 +468,14 @@
      * セーブファイルからサムネイルをロードします.
      *
      * @param {number} savefileId セーブファイルのID
+     * @param {object} info セーブデータ
      * @param {number} hue 色相
      * @return {Bitmap} 
      */
-    ImageManager.loadThumbnail = function(savefileId) {
-        const info = DataManager.loadSavefileInfo(savefileId);
+    ImageManager.loadThumbnail = function(savefileId, info, hue) {
         const cacheKey = generateThumbUniqueKey(savefileId);
         if (info && info.thumbnail && cacheKey) {
-            return ImageManager.loadBase64Bitmap(info.thumbnail, cacheKey);
+            return ImageManager.loadBase64Bitmap(info.thumbnail, cacheKey, hue);
         }
         return this.loadEmptyBitmap();
     };
@@ -483,14 +484,14 @@
      * セーブファイルからサムネイルをリクエストします.
      *
      * @param {number} savefileId セーブファイルのID
+     * @param {object} info セーブデータ
      * @param {number} hue 色相
      * @return {Bitmap} 
      */
-    ImageManager.requestThumbnail = function(savefileId) {
-        const info = DataManager.loadSavefileInfo(savefileId);
+    ImageManager.requestThumbnail = function(savefileId, info, hue) {
         const cacheKey = generateThumbUniqueKey(savefileId);
         if (info && info.thumbnail && cacheKey) {
-            return this.requestBase64Bitmap(info.thumbnail, cacheKey);
+            return this.requestBase64Bitmap(info.thumbnail, cacheKey, hue);
         }
         return this.loadEmptyBitmap();
     };
@@ -612,7 +613,7 @@
             this.contents.fillRect(x, y, width, height, '#000000');
         }
         bitmap.addLoadListener(() => {
-            this._onLoadBase64Data(bitmap, x, y, lastOpacity, width, height, onDrawAfter = null);
+            this._onLoadBase64Data(bitmap, x, y, lastOpacity, width, height, onDrawAfter);
         });
     };
 
@@ -666,7 +667,7 @@
             if (this.topRow() !== lastTopRow || Math.floor(this._scrollX / this.itemWidth()) !== lastLeftCol) {
                 return;
             }
-            this._onLoadBase64Data(bitmap, x, y, lastOpacity, width, height, onDrawAfter = null);
+            this._onLoadBase64Data(bitmap, x, y, lastOpacity, width, height, onDrawAfter);
         });
     };
 
@@ -690,7 +691,9 @@
             this._thumbContainer = new PIXI.Container();
             this.addChildAt(this._thumbContainer, contentsIndex);
             let thumb;
-            for (let i = 0, l = this.maxVisibleItems(); i < l; i++) {
+            let maxVisibleRows = this.maxItems();
+            //let maxVisibleRows = this.maxVisibleItems();
+            for (let i = 0, l = maxVisibleRows; i < l; i++) {
                 thumb = new Sprite();
                 thumb.scale.x = thumbItemScale;
                 thumb.scale.y = thumbItemScale;
@@ -715,6 +718,11 @@
             }
         };
 
+        Window_SavefileList.prototype.bottomIndex = function() {
+            return this.topIndex() + this.maxPageItems() - 1;
+        };
+
+        /*
         monkeyPatch(Window_SavefileList.prototype, 'refresh', function($) {
             return function() {
                 this.clearThumbnail();
@@ -731,6 +739,7 @@
                 thumb.visible = false;
             }
         };
+        */
 
         monkeyPatch(Window_SavefileList.prototype, 'drawContents', function($) {
             return function(info, rect, valid) {
@@ -745,6 +754,16 @@
         });
 
         /**
+         * 何番目のセーブファイルかを返す
+         * 
+         * @param {Object} info セーブファイルのインフォデータ
+         * @return {number} 
+         */
+        Window_SavefileList.prototype.getSavefileId = function(info) {
+            return DataManager.getSavefileId(info);
+        };
+
+        /**
          * サムネイルを描画する
          * 
          * @param {Object} info セーブファイルのインフォデータ
@@ -752,13 +771,14 @@
          * @param {boolean} valid 
          */
         Window_SavefileList.prototype.drawThumbnail = function(info, thumbRect, valid) {
-            const savefileId = DataManager.getSavefileId(info);
+            const savefileId = this.getSavefileId(info);
+            const listIndex = savefileId - 1;
             if (savefileId > 0 && info.thumbnail) {
-                let sprite = this._thumbContainer.children.find((s) => !s.visible);
+                let sprite = this._thumbContainer.children[listIndex];
                 sprite.visible = true;
                 sprite.x = thumbRect.x;
                 sprite.y = thumbRect.y;
-                const thunmbBitmap = ImageManager.loadThumbnail(savefileId);
+                const thunmbBitmap = ImageManager.loadThumbnail(savefileId, info);
                 if (!thunmbBitmap.isReady()) {
                     // 読み込み終わるまで別のビットマップを表示
                     const empty = ImageManager.loadBusyThumbBitmap(thumbRect.width, thumbRect.height);
@@ -766,10 +786,11 @@
                 }
                 thunmbBitmap.addLoadListener(() => {
                     // 読み込み終わったときにリスト表示範囲内であれば描画
-                    if (this.topIndex() < savefileId &&
-                        this.topIndex() + this.maxPageItems() >= savefileId) {
+                    if (this.topIndex() <= listIndex && this.bottomIndex() >= listIndex) {
                         sprite.bitmap = thunmbBitmap;
                         sprite.bitmap.paintOpacity = valid ? 255 : this.translucentOpacity();
+                    } else {
+                        sprite.visible = false;
                     }
                 });
             }
@@ -871,7 +892,7 @@
                 this._thumbSprite.visible = true;
                 this._thumbSprite.x = thumbRect.x;
                 this._thumbSprite.y = thumbRect.y;
-                const thunmbBitmap = ImageManager.loadThumbnail(savefileId);
+                const thunmbBitmap = ImageManager.loadThumbnail(savefileId, info);
                 if (!thunmbBitmap.isReady()) {
                     // 読み込み終わるまで別のビットマップを表示
                     const empty = ImageManager.loadBusyThumbBitmap(thumbRect.width, thumbRect.height);
