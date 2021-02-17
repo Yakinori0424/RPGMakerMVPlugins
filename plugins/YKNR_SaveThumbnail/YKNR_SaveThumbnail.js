@@ -1,5 +1,5 @@
 //============================================================================
-// YKNR_SaveThumbnail.js - ver.1.1.2
+// YKNR_SaveThumbnail.js - ver.1.2.0
 // ---------------------------------------------------------------------------
 // Copyright (c) 2019 Yakinori
 // This software is released under the MIT License.
@@ -16,6 +16,13 @@
  * @text サムネイルの自動生成
  * @desc マップ画面からメニュー画面に切り替えたタイミングで
  * サムネイル用の画像を撮影するかを設定します。
+ * @type boolean
+ * @default true
+ *
+ * @param FastLoadingData
+ * @text 読み込み速度高速化
+ * @desc セーブ/ロード画面に入ったときやファイルリストを
+ * スクロールしたときの読み込み速度を改善します。
  * @type boolean
  * @default true
  *
@@ -168,6 +175,7 @@
  * [2020/05/28] [1.1.1] デプロイメント時に「画像の暗号化」にチェックを入れて
  *   出力されたゲームでサムネイル表示時にエラーが出ていた問題の修正
  * [2021/02/16] [1.1.2] Window_SavefileListでのサムネイルのコンテナ数の調整
+ * [2021/02/18] [1.2.0] サムネイル表示処理の修正。「読み込み速度高速化」を追加
  *
  * ===========================================================================
  * [Blog]   : http://mata-tuku.ldblog.jp/
@@ -248,6 +256,7 @@
     const pluginName = 'YKNR_SaveThumbnail';
     const parameters = PluginManager.parameters(pluginName);
     const isAutoSnap = parameters['AutoSnapForThumbnail'] === 'true';
+    const isFastLoadingData = parameters['FastLoadingData'] === 'true';
     const thumbQuality = parseInt(parameters['ThumbQuality']);
     const thumbSaveWidth = parseInt(parameters['ThumbSaveWidth']);
     const thumbSaveHeight = parseInt(parameters['ThumbSaveHeight']);
@@ -674,6 +683,35 @@
 
     //------------------------------------------------------------------------
 
+    // Scene_File 上での DataManager.loadGlobalInfo の実行回数を減らすための対応
+    if (isFastLoadingData) {
+        /** @type {Object[]} */
+        let _globalInfo;
+
+        monkeyPatch(DataManager, 'loadGlobalInfo', function($) {
+            return function() {
+                return _globalInfo ? _globalInfo : $.call(this);
+            };
+        });
+
+        monkeyPatch(Scene_File.prototype, 'initialize', function($) {
+            return function() {
+                _globalInfo = DataManager.loadGlobalInfo();
+                $.call(this);
+            };
+        });
+
+        monkeyPatch(Scene_File.prototype, 'terminate', function($) {
+            return function() {
+                $.call(this);
+                _globalInfo = null;
+            };
+        });
+    }
+
+
+    //------------------------------------------------------------------------
+
     // リストウィンドウ内に, サムネイル表示を行う処理を追加します
     if (isShowInList) {
         Window_SavefileList.prototype.thumbnailX = eval('(function(rect, width) { return %1; });'.format(thumbItemPosX));
@@ -722,7 +760,6 @@
             return this.topIndex() + this.maxPageItems() - 1;
         };
 
-        /*
         monkeyPatch(Window_SavefileList.prototype, 'refresh', function($) {
             return function() {
                 this.clearThumbnail();
@@ -739,7 +776,6 @@
                 thumb.visible = false;
             }
         };
-        */
 
         monkeyPatch(Window_SavefileList.prototype, 'drawContents', function($) {
             return function(info, rect, valid) {
@@ -754,16 +790,6 @@
         });
 
         /**
-         * 何番目のセーブファイルかを返す
-         * 
-         * @param {Object} info セーブファイルのインフォデータ
-         * @return {number} 
-         */
-        Window_SavefileList.prototype.getSavefileId = function(info) {
-            return DataManager.getSavefileId(info);
-        };
-
-        /**
          * サムネイルを描画する
          * 
          * @param {Object} info セーブファイルのインフォデータ
@@ -771,7 +797,7 @@
          * @param {boolean} valid 
          */
         Window_SavefileList.prototype.drawThumbnail = function(info, thumbRect, valid) {
-            const savefileId = this.getSavefileId(info);
+            const savefileId = DataManager.getSavefileId(info);
             const listIndex = savefileId - 1;
             if (savefileId > 0 && info.thumbnail) {
                 let sprite = this._thumbContainer.children[listIndex];
@@ -787,6 +813,7 @@
                 thunmbBitmap.addLoadListener(() => {
                     // 読み込み終わったときにリスト表示範囲内であれば描画
                     if (this.topIndex() <= listIndex && this.bottomIndex() >= listIndex) {
+                        sprite.visible = true;
                         sprite.bitmap = thunmbBitmap;
                         sprite.bitmap.paintOpacity = valid ? 255 : this.translucentOpacity();
                     } else {
