@@ -21,7 +21,7 @@ MZ版は、MV版の移植に加えてオートセーブにもサムネイルが�
 [LICENSE]: ./LICENSE
 [【Download for MV】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_SaveThumbnail.js
 [【Download for MZ】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_MZ_SaveThumbnail.js
-[【Goto MZ Core】]: ../YKNR_Core
+[共通プラグイン]: ../YKNR_Core
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
@@ -29,18 +29,18 @@ MZ版は、MV版の移植に加えてオートセーブにもサムネイルが�
 [【Download for MV】][] 
 [【Download for MZ】][]  
   
-[【Goto MZ Core】][]  
-**※MZ版の実行には、この共通プラグインが必要です。**
+**MZ版の実行には、 [共通プラグイン][] が必要です！**  
+**未導入の方はリンク先からダウンロードしてください。**
 
 ---
 ## 使用方法
 プラグインパラメータについて  
-* 「サムネイルの自動生成」(MV Only)  
+* 「サムネイルの自動生成」**(MV Only)**  
   false にした場合、サムネイルの撮影は手動で行うことになります。  
   その場合は、イベントコマンドの「スクリプト」から以下を呼び出してください。  
   `SceneManager.snapForThumbnail();`
 
-* 「読み込み速度高速化」(MV Only)  
+* 「読み込み速度高速化」**(MV Only)**  
   セーブ画面/ロード画面のglobalデータの読み込みを1回にすることで  
   同シーンの読み込み速度の改善を図ります。  
   これにより、スクロール時のもたつきも解消されます。
@@ -62,6 +62,7 @@ MZ版は、MV版の移植に加えてオートセーブにもサムネイルが�
 ---
 ## スクリーンショット
 ![](./res/YKNR_SaveThumbnail_01.jpg)<br><br>
+![](./res/YKNR_SaveThumbnail_02.jpg)<br><br>
 
 ---
 ## License
