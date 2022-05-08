@@ -21,7 +21,7 @@ MZ版は、MV版の移植に加えてオートセーブにもサムネイルが�
 [LICENSE]: ./LICENSE
 [【Download for MV】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_SaveThumbnail.js
 [【Download for MZ】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_MZ_SaveThumbnail.js
-[【Goto MZ Core】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_Core
+[【Goto MZ Core】]: ../YKNR_Core
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
