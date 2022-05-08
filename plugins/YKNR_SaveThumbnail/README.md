@@ -1,4 +1,5 @@
 # YKNR_SaveThumbnail.js [Ver.1.2.0]
+# YKNR_MZ_SaveThumbnail.js [Ver.1.0.0]
 セーブデータにマップの現在地の画像をサムネイル用に保存し、  
 セーブ画面/ロード画面にそのサムネイルを表示する機能を追加します。  
 
@@ -8,32 +9,38 @@
 セーブデータに保存する画像の画質とサイズを指定することもできるため、  
 ある程度データサイズを抑制することもできます。  
 
-サムネイル撮影のタイミングは、メニュー画面を開くときに自動に撮影されます。  
-
 また、準公式プラグイン **community-1.3** の「オートセーブ機能」でセーブされたデータには、  
-サムネイルは表示しない仕様となっています。  
+サムネイルは表示しない仕様となっています。(MV Only)  
 
+MZ版は、MV版の移植に加えてオートセーブにもサムネイルが表示できるようになったほか、  
+内部の処理も修正を加えています。  
 
 ---
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_SaveThumbnail.js
+[【Download for MV】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_SaveThumbnail.js
+[【Download for MZ】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_MZ_SaveThumbnail.js
+[【Goto MZ Core】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_Core
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
 *右クリック → 名前を付けて保存* でプラグインをダウンロードできます。  
-[【Download】][]
+[【Download for MV】][] 
+[【Download for MZ】][]  
+  
+[【Goto MZ Core】][]  
+**※MZ版の実行には、この共通プラグインが必要です。**
 
 ---
 ## 使用方法
 プラグインパラメータについて  
-* 「サムネイルの自動生成」  
+* 「サムネイルの自動生成」(MV Only)  
   false にした場合、サムネイルの撮影は手動で行うことになります。  
   その場合は、イベントコマンドの「スクリプト」から以下を呼び出してください。  
   `SceneManager.snapForThumbnail();`
 
-* 「読み込み速度高速化」  
+* 「読み込み速度高速化」(MV Only)  
   セーブ画面/ロード画面のglobalデータの読み込みを1回にすることで  
   同シーンの読み込み速度の改善を図ります。  
   これにより、スクロール時のもたつきも解消されます。
@@ -50,8 +57,6 @@
 * 「別ウィンドウの表示設定」  
   ファイルリスト内ではなく、他プラグインによって追加された任意のウィンドウに表示することも可能です。  
   表示したいウィンドウのクラス名を設定することで表示できます。  
-  例えば **Window_Help** と設定すると、ヘルプウィンドウ内に選択中のセーブデータのサムネイルが表示されます。  
-  (`SceneManager._scene._listWindow` を参照しているため、これが存在しない場合は正常に動作しません。)
 
 
 ---
