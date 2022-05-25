@@ -5,6 +5,7 @@
 // License    : MIT License(http://opensource.org/licenses/mit-license.php)
 // ---------------------------------------------------------------------------
 // Version    : 1.0.0 (2022/05/06) 公開
+//            : 1.1.0 (2022/05/26) Coreにプラグインコマンド登録関数の追加
 // ---------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -81,6 +82,14 @@
  * Bitmap.snap のサイズ指定版。
  * 
 */
+
+/**
+ * プラグインコマンド登録の構造体
+ * @typedef PulginCommandData
+ * @property {string} k コマンド名
+ * @property {Function} f 実行関数
+ */
+
 
 (() => {
     "use strict";
@@ -294,6 +303,19 @@
             static redefine(target, methodName, newMethod) {
                 target[methodName] = newMethod(target[methodName]);
             }
+
+            /**
+             * プラグインコマンドの一括登録
+             *
+             * @param {Array<PulginCommandData>} commandDataList 拡張プラグインコマンド
+            */
+            static registerPluginCommands(commandDataList) {
+                const pluginName = this.pluginName();
+                for (const commandData of commandDataList) {
+                    PluginManager.registerCommand(pluginName, commandData.k, commandData.f);
+                }
+            };
+
         };
 
         return YKNR_Core;
