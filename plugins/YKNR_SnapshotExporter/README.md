@@ -11,15 +11,33 @@
 (ツクールからのテスト実行では、毎回保存場所を聞かれます。)
 
 ---
+# YKNR_MZ_SnapshotExporter.js [Ver.1.0.0]
+
+MZ版は、MV版の移植に加えて内部の処理も修正を加えています。  
+以下はMV版との違いです。  
+
+- 画面の撮影に限り、画像の左下に署名を記載する機能を追加
+
+MZ版の実行には共通プラグインが必要になります。  
+リンクは [ダウンロード](#ダウンロード) の項目からお願いします。  
+
+---
+---
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SnapshotExporter/YKNR_SnapshotExporter.js
+[【Download for MV】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_SnapshotExporter.js
+[【Download for MZ】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_SaveThumbnail/YKNR_MZ_SnapshotExporter.js
+[共通プラグイン]: ../YKNR_Core
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
 *右クリック → 名前を付けて保存* でプラグインをダウンロードできます。  
-[【Download】][]
+[【Download for MV】][]  
+[【Download for MZ】][]  
+
+**MZ版の実行には、 [共通プラグイン][] が必要です！**  
+**未導入の方はリンク先からダウンロードしてください。**
 
 ---
 ## 使用方法
