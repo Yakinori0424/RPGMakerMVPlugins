@@ -5,7 +5,7 @@
 ---
 
 <!-- ここからURL一覧 -->
-[YKNR_Core.js]: /plugins/YKNR_Core
+[YKNR_MZ_Core.js]: /plugins/YKNR_Core
 [YKNR_MessageKeyWord.js]: /plugins/YKNR_MessageKeyWord
 [YKNR_ShopSettingsEx.js]: /plugins/YKNR_ShopSettingsEx
 [YKNR_SlideInformation.js]: /plugins/YKNR_SlideInformation
