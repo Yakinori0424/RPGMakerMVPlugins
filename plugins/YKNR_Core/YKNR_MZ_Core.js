@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 // Version    : 1.0.0 (2022/05/06) 公開
 //            : 1.1.0 (2022/05/26) Coreにプラグインコマンド登録関数の追加
+//            : 1.1.1 (2022/06/02) データURL読み込み処理を本体v.1.5.0に合わせる
 // ---------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -1350,6 +1351,10 @@
             const mimeType = YKNR_UtilDataUrl.extractMimeType(this._url);
             const blob = new Blob([arrayBuffer], { type: mimeType });
             this._image.src = URL.createObjectURL(blob);
+            if (this._image.width > 0) {
+                this._image.onload = null;
+                this._onLoad();
+            }
         };
 
         YKNR.Core.redefine(Bitmap.prototype, "_startLoading", function($) {
