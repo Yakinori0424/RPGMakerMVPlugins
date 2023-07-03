@@ -1,25 +1,34 @@
-//============================================================================
+//=============================================================================
 // YKNR_MZ_Core.js
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // (c) 2022 焼きノリ
 // License    : MIT License(http://opensource.org/licenses/mit-license.php)
-// ---------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
 // Version    : 1.0.0 (2022/05/06) 公開
 //            : 1.1.0 (2022/05/26) Coreにプラグインコマンド登録関数の追加
 //            : 1.1.1 (2022/06/02) データURL読み込み処理を本体v.1.5.0に合わせる
-// ---------------------------------------------------------------------------
+//            : 1.2.0 (2023/03/01) YKNR.Core.redefine 関数を拡張
+//            :                    DataManager.extractMetadata 拡張関数の追加
+//            :                    プラグインコマンドで使用する共通関数の追加
+//            :                    型定義ファイルを別途用意（主に自分用）
+//            :                    一部, クラス式による宣言を廃止
+// ----------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
-//============================================================================
+//=============================================================================
 
 /*:
+ * @===========================================================================
  * @plugindesc 焼きノリ作のプラグインのパラメータの解析/展開や
  * 汎用性のある機能を纏めている共通プラグインです。
  * @author 焼きノリ
  * @target MZ
  * @url https://github.com/Yakinori0424/RPGMakerMVPlugins/tree/master/plugins/YKNR_Core
- *
+ * @===========================================================================
  * 
+ * 
+ * 
+ * @===========================================================================
  * @help YKNR_MZ_Core.js
  * ----------------------------------------------------------------------------
  *  *【！注意！】
@@ -69,6 +78,11 @@
  * こちらは、ユーザーが利用しても構わんよ、という緩いスタンスです。
  * 
  * 
+ * ■ YKNR.UtilPluginCommand
+ * プラグインコマンド内で使用する共通の機能を纏めたクラスです。
+ * こちらは、ユーザーが利用しても構わんよ、という緩いスタンスです。
+ * 
+ * 
  * ■ YKNR.UtilDataUrl
  * 画像のデータURLを展開する機能を纏めたクラスです。
  * ユーザーがこれを利用することは想定していません。
@@ -84,166 +98,144 @@
  * 
 */
 
-/**
- * プラグインコマンド登録の構造体
- * @typedef PulginCommandData
- * @property {string} k コマンド名
- * @property {Function} f 実行関数
- */
-
-
 (() => {
     "use strict";
-    const YKNR = window.YKNR ||= {};
+
+    window.YKNR ||= {};
+    const YKNR = window.YKNR;
 
     // =======================================================================
-    // プラグインを作成するために用いる関数たち
-    YKNR.Core = (() => {
-        const _imported = {};
+    // YKNR.Core
+    (() => {
+        const REGEXP_SARCH_PULGIN_NAME = Object.freeze(/^.*\/plugins\/(.*).js$/);
+        const REGEXP_REVIVER_ARRAY2MAP = Object.freeze([/^.+?Map$/, /^.+?Dictionary$/]);
+        const REGEXP_REVIVER_VALUE2FUNC = Object.freeze([/^.+?Function$/, /^.+?Callback$/, /^On[A-Z].+$/]);
 
-        class YKNR_Core {
-            /**
-             * 読み込み済みのプラグインか判定
-             *
-             * @param {string} pluginName プラグインのファイル名(サブフォルダは不要)
-             * @return {boolean} 読み込み済みであれば true を返す
-             */
-            static isImported(pluginName) {
-                return _imported[pluginName] !== undefined;
+        /** @type {Map<string,boolean>} */
+        const _imported = new Map();
+
+        /**
+         * {@link YKNR.Core.redefine}可能かチェックし, 問題があれば例外をスローします.
+         * @template T
+         * @param {T} target
+         * @param {string} methodName
+         */
+        function checkRedefinable(target, methodName) {
+            if (target === null || target === undefined) {
+                throw new Error("'target' in arguments is null or undefined");
+            }
+            if (!methodName) {
+                throw new Error("'methodName' in arguments is empty");
+            }
+            const oldMethod = target[methodName];
+            if (!oldMethod) {
+                throw new Error(`'${methodName}' is not defined in 'target'`);
+            }
+            if (typeof oldMethod !== "function") {
+                throw new Error(`'${methodName}' in 'target' is not function`);
+            }
+        };
+
+
+        // constructor
+        YKNR.Core = function YKNR_Core() {
+            throw new Error("This is a static class");
+        };
+
+        YKNR.Core.isImported = function(pluginName) {
+            return _imported.has(pluginName);
+            //return _imported[pluginName] !== undefined;
+        };
+
+        YKNR.Core.importCurrentPlugin = function() {
+            const pluginName = this.pluginName();
+            _imported.set(pluginName, true);
+            //_imported[pluginName] = true;
+            return this.pluginParams(pluginName);
+        };
+
+        YKNR.Core.pluginName = function() {
+            const currentScript = document.currentScript;
+            const pulginPath = currentScript?.src.replace(REGEXP_SARCH_PULGIN_NAME,
+                (match, p1) => decodeURIComponent(p1));
+            return Utils.extractFileName(pulginPath);
+        };
+
+        YKNR.Core.pluginParams = function(pluginName) {
+            const parameters = PluginManager.parameters(pluginName);
+            const jsonStrings = JSON.stringify(parameters, this.paramReplacer);
+            const parsedParams = JSON.parse(jsonStrings, this.paramReviver);
+            return parsedParams;
+        };
+
+        YKNR.Core.paramReplacer = function(key, value) {
+            // Boolean
+            if (value === "true" || value === "false") {
+                return value === "true";
             }
 
-            /**
-             * 実行中のプラグインを _imported へ追加し, そのプラグインパラメータを返します.\
-             * ゲーム中に取得することはできません.\
-             * 以降, isImported(pluginName) で判定できます.
-             *
-             * @return {Object} パースしたプラグインパラメータ
-             */
-            static importCurrentPlugin() {
-                const pluginName = this.pluginName();
-                _imported[pluginName] = true;
-                return this.pluginParams(pluginName);
+            // Number
+            if (Number(value).toString() === value) {
+                return Number(value);
             }
 
-            /**
-             * 実行中のプラグインの名前を取得します.\
-             * ゲーム中に取得することはできません.\
-             *
-             * @return {string} 実行中プラグインのファイル名
-             */
-            static pluginName() {
-                const currentScript = document.currentScript;
-                const pulginPath = currentScript?.src.replace(/^.*\/plugins\/(.*).js$/,
-                    (match, p1) => decodeURIComponent(p1));
-                return Utils.extractFileName(pulginPath);
+            // Array or Object
+            if (value[0] === "[" && value[value.length - 1] === "]"
+                || value[0] === "{" && value[value.length - 1] === "}") {
+                return JSON.parse(value);
             }
 
-            /**
-             * プラグインのパラメータをパースして返します.
-             *
-             * @param {string} pluginName プラグインのファイル名
-             * @return {Object} パースしたプラグインパラメータ
-             */
-            static pluginParams(pluginName) {
-                const parameters = PluginManager.parameters(pluginName);
-                const jsonStrings = JSON.stringify(parameters, this.paramReplacer);
-                const parsedParams = JSON.parse(jsonStrings, this.paramReviver);
-                return parsedParams;
+            // String or Any
+            return value;
+        };
+
+        YKNR.Core.paramReviver = function(key, value) {
+            // パラメータ名を元に変換
+            if (REGEXP_REVIVER_ARRAY2MAP.some((reg) => reg.test(key))) {
+                // value to Map
+                return YKNR_Core.convertArrayToMap(value);
+            } else if (REGEXP_REVIVER_VALUE2FUNC.some((reg) => reg.test(key))) {
+                // value to Function
+                return YKNR_Core.convertValuetoFunction(value);
             }
 
-            /**
-             * プラグインパラメータのJson文字列変換への置き換え関数
-             *
-             * @param {string} key
-             * @param {Object} value
-             * @return {Object}
-             */
-            static paramReplacer(key, value) {
-                // Boolean
-                if (value === "true" || value === "false") {
-                    return value === "true";
-                }
+            // Raw
+            return value;
+        };
 
-                // Number
-                if (Number(value).toString() === value) {
-                    return Number(value);
-                }
+        YKNR.Core.convertArrayToMap = function(array) {
+            /** @type {Map<string,object>} */
+            const map = new Map();
 
-                // Array or Object
-                if (value[0] === "[" && value[value.length - 1] === "]"
-                    || value[0] === "{" && value[value.length - 1] === "}") {
-                    return JSON.parse(value);
-                }
-
-                // String or AnyType
-                return value;
-            }
-
-            /**
-             * プラグインパラメータのJsonからオブジェクトへの変換関数
-             *
-             * @param {string} key
-             * @param {string} value
-             * @return {Object}
-             */
-            static paramReviver(key, value) {
-                // パラメータ名を元に変換
-                if ([/^.+?Map$/, /^.+?Dictionary$/].some((reg) => reg.test(key))) {
-                    // value to Map
-                    return YKNR_Core.convertArrayToMap(value);
-                } else if ([/^.+?Function$/, /^.+?Callback$/, /^On[A-Z].+$/].some((reg) => reg.test(key))) {
-                    // value to Function
-                    return YKNR_Core.convertValuetoFunction(value);
-                }
-
-                // Raw
-                return value;
-            }
-
-            /**
-             * 配列内のオブジェクトのプロパティを利用して, 配列をMapオブジェクトに変換します.\
-             * プロパティには key, value が必須です.
-             *
-             * @param {Array<Object>} array 基とする配列
-             * @return {Map<string,Object>} 変換後のMapオブジェクト
-             */
-            static convertArrayToMap(array) {
-                const map = new Map();
-                if (Array.isArray(array)) {
-                    // Mapオブジェクト変換可否チェック
-                    const k = "key", v = "value";
-                    console.assert(array.every((a) => a.hasOwnProperty(k) && a.hasOwnProperty(v)));
-                    for (let i = 0, l = array.length; i < l; i++) {
-                        const keyName = array[i][k];
-                        if (map.has(keyName)) {
-                            console.error("key名が重複しています! : %1\n\o".format(keyName), array);
+            if (Array.isArray(array)) {
+                // Mapオブジェクト変換可否チェック
+                if (array.every(e => "key" in e && "value" in e)) {
+                    array.forEach(e => {
+                        const key = e.key;
+                        const value = e.value;
+                        if (map.has(key)) {
+                            console.error(`key名が重複しています! : ${key}\n\o`, array);
                         }
-                        map.set(keyName, array[i][v]);
-                    }
+                        map.set(key, value);
+                    });
                 }
-                return map;
             }
 
-            /**
-             * 渡された引数から無名関数に変換します.\
-             * オブジェクトの場合, プロパティには jsCode が必須, さらに引数が必要な場合は argFormat です.
-             *
-             * @param {string|Object} value 引数 or スクリプトコード
-             * @return {Function} 無名関数
-             */
-            static convertValuetoFunction(value) {
-                // 関数変換可否チェック
-                if (typeof (value) === "string") {
-                    if (value[0] === "\"" && value[value.length - 1] === "\"") {
-                        // String(Note) to Function(引数なし)
-                        return this.toFunction(JSON.parse(value));
-                    } else {
-                        // String to Function(引数なし)
-                        return this.toFunction(value);
-                    }
-                } else if (typeof (value) === "object") {
-                    console.assert(value.hasOwnProperty("jsCode"));
-                    /** @type {string} */
+            return map;
+        };
+
+        YKNR.Core.convertValuetoFunction = function(value) {
+            // 関数変換可否チェック
+            if (typeof (value) === "string") {
+                if (value[0] === "\"" && value[value.length - 1] === "\"") {
+                    // String(Note) to Function(引数なし)
+                    return this.toFunction(JSON.parse(value));
+                } else {
+                    // String to Function(引数なし)
+                    return this.toFunction(value);
+                }
+            } else if (typeof (value) === "object") {
+                if ("jsCode" in value) {
                     const code = value.jsCode;
                     if (code[0] === "\"" && code[code.length - 1] === "\"") {
                         // Object(Note jsCode) to Function(引数あり)
@@ -253,73 +245,79 @@
                         return this.toFunction(value.argFormat, code);
                     }
                 }
-                // empty function
-                return (function() { });
             }
 
-            /**
-             * スクリプトを実行する関数を返します.\
-             * JavaScriptとして実行する無名関数を返す即時関数を評価しています.
-             *
-             * @param {string} argsOrCode 引数 or スクリプトコード
-             * @param {string} code 引数がある場合のスクリプトコード(引数なしの場合は省略可)
-             * @return {Function} 渡されたコードを実行する無名関数
-             *
-             * @example
-             * // 引数3つの合計値を返すコード
-             * const xyzTotal = YKNR.Core.toFunction("x,y,z", "return x+y+z;");
-             * console.log(xyzTotal(2, 3, 4));
-             * // => 9
-             *
-             * // 0個以上の引数の合計値を返すコード
-             * const total = YKNR.Core.toFunction("...a", "return a.reduce((b, c) => b + c, 0);");
-             * console.log(total(2, 3, 4, 5, 6));
-             * // => 20
-             */
-            static toFunction(argsOrCode, code = undefined) {
-                argsOrCode = argsOrCode || '';
-                const _args = code !== undefined ? argsOrCode : '';
-                const _code = code !== undefined ? code : argsOrCode;
-                return Function(`"use strict"; return (function(${_args}) { ${_code} });`)();
-            }
-
-            /**
-             * 対象のオブジェクト上の関数を再定義します.
-             *
-             * @param {Object} target 対象のオブジェクト
-             * @param {string} methodName 再定義する関数名
-             * @param {Function} newMethod 新しい関数を返す関数
-             *
-             * @example
-             * YKNR.Core.redefine(Game_Temp.prototype, "initialize", function($) {
-             *     return function() {
-             *         // 再定義前の旧関数の実行
-             *         $.call(this);
-             *
-             *         // 追加したい処理
-             *         this.newMemberValue = 0;
-             *     };
-             * });
-             */
-            static redefine(target, methodName, newMethod) {
-                target[methodName] = newMethod(target[methodName]);
-            }
-
-            /**
-             * プラグインコマンドの一括登録
-             *
-             * @param {Array<PulginCommandData>} commandDataList 拡張プラグインコマンド
-            */
-            static registerPluginCommands(commandDataList) {
-                const pluginName = this.pluginName();
-                for (const commandData of commandDataList) {
-                    PluginManager.registerCommand(pluginName, commandData.k, commandData.f);
-                }
-            };
-
+            // empty function
+            return (function() { });
         };
 
-        return YKNR_Core;
+        YKNR.Core.toFunction = function(argsOrCode, code = undefined) {
+            argsOrCode = argsOrCode || '';
+            const _args = code !== undefined ? argsOrCode : '';
+            const _code = code !== undefined ? code : argsOrCode;
+            return Function(`"use strict"; return (function(${_args}) { ${_code} });`)();
+        };
+
+        YKNR.Core.toNumber = function(value) {
+            if (value.slice(-1) === "%") {
+                return Number(value.slice(0, value.length - 1)) * 0.01;
+            } else {
+                return Number(value);
+            }
+        };
+
+        YKNR.Core.toTrait = function(code, dataId = 0, value = 0) {
+            return { code: code, dataId: dataId, value: value, ext: true };
+        };
+
+        YKNR.Core.setGlobal = function(anyClass) {
+            const name = anyClass.name;
+            if (window[name]) {
+                // 同名のものがあれば, 潜在バグが無いように明示的にエラーを出力する
+                throw new Error(`Name of ${name} is existed in global`);
+            }
+            window[name] = anyClass;
+        };
+
+        YKNR.Core.redefine = function() {
+            if (arguments.length == 2) {
+                redefineV2(...arguments);
+            } else {
+                redefineV1(...arguments);
+            }
+        };
+
+        /**
+         * @template T
+         * @template R
+         * @param {T} target 
+         * @param {string} methodName 
+         * @param {YKNR.types.RedefMethodWrapper<T,R>} newMethodWrapper 
+         */
+        function redefineV1(target, methodName, newMethodWrapper) {
+            checkRedefinable(target, methodName);
+            target[methodName] = newMethodWrapper(target[methodName]);
+        };
+
+        /**
+         * @template T
+         * @template R
+         * @param {T} target 
+         * @param {YKNR.types.TRFunction<T,R>} newMethod 
+         */
+        function redefineV2(target, newMethod) {
+            const methodName = newMethod.name;
+            checkRedefinable(target, methodName);
+            newMethod.super = target[methodName].bind(target);
+            target[methodName] = newMethod;
+        };
+
+        YKNR.Core.registerPluginCommands = function(commands) {
+            const pluginName = this.pluginName();
+            commands.forEach(command => {
+                PluginManager.registerCommand(pluginName, command.name, command.func);
+            });
+        };
     })();
     /*
     // 第三者向けの使用例メモ
@@ -328,67 +326,70 @@
     */
 
 
-    // =======================================================================
-    // 既存処理を拡張した新たな関数を, 複数のプラグインで再定義できるよう纏めたクラス.
-    // 該当の関数を拡張する場合は, ここで用意した関数を再定義する.
-    YKNR.Extension = (() => {
-        class YKNR_Extension {
-            /**
-             * DataManager.onLoad から呼び出される, 拡張用のコールバック関数.\
-             * DataManager._databaseFiles 内の全データの読み込みが完了したタイミングで実行される
-             *
-             */
-            static onCompleteLoadDatabase() {
-            }
+    // -----------------------------------------------------------------------
+    //const parameters = YKNR.Core.importCurrentPlugin();
+    //console.log(parameters);
 
-            /**
-             * DataManager.onLoad から呼び出される, 拡張用のコールバック関数.\
-             * DataManager._databaseFiles に無いデータの読み込みが完了したタイミングで実行される
-             *
-             * @param {Object} object Jsonから変換されたオブジェクトデータ
-             */
-            static onLoadOtherData(object) {
-            }
+
+    // =======================================================================
+    // YKNR.Extension
+    (() => {
+        // ロード時の挙動調整用
+        let _isLoadDataCompleted = false;
+
+        // constructor
+        YKNR.Extension = function YKNR_Extension() {
+            throw new Error("This is a static class");
+        };
+
+        YKNR.Extension.onCompleteLoadDatabase = function() {
+            //console.log("onCompleteLoadDatabase");
+        };
+
+        YKNR.Extension.onLoadOtherData = function(object) {
+            //console.log(`onLoadOtherData : \n${object}`);
+        };
+
+        YKNR.Extension.onExtracedMetadata = function(data) {
+            //console.log(`onExtracedMetadata : \n${data}`);
         };
 
         // -------------------------------------------------------------------
-        // ロード時の挙動調整
-        let _isLoadDataCompleted = false;
 
         YKNR.Core.redefine(DataManager, "loadDatabase", function($) {
             return function() {
                 _isLoadDataCompleted = false;
-                $.call(this);
+                $.call(this, ...arguments);
             };
         });
 
         YKNR.Core.redefine(DataManager, "onLoad", function($) {
             return function(object) {
-                $.call(this, object);
+                $.call(this, ...arguments);
 
-                const databaseNames = this._databaseFiles.map(file => file.name);
+                const databaseNames = DataManager._databaseFiles.map(file => file.name);
                 const isDatabaseObj = databaseNames.some(name => window[name] === object);
 
-                // すべてのデータベースを読み込んだ時点で実行する
-                if (!_isLoadDataCompleted && isDatabaseObj && DataManager.isDatabaseLoaded()) {
-                    _isLoadDataCompleted = true;
-                    YKNR_Extension.onCompleteLoadDatabase();
-                }
-
-                // データベース以外のものを読み込んだとき実行する
                 if (!isDatabaseObj) {
-                    YKNR_Extension.onLoadOtherData(object);
+                    // データベース以外のものを読み込んだとき実行する
+                    YKNR.Extension.onLoadOtherData(object);
+                } else {
+                    // データベースをすべて読み込んだとき実行する
+                    if (!_isLoadDataCompleted && DataManager.isDatabaseLoaded()) {
+                        _isLoadDataCompleted = true;
+                        YKNR.Extension.onCompleteLoadDatabase();
+                    }
                 }
             };
         });
 
-        return YKNR_Extension;
+        YKNR.Core.redefine(DataManager, "extractMetadata", function($) {
+            return function(data) {
+                $.call(this, ...arguments);
+                YKNR.Extension.onExtracedMetadata(data);
+            };
+        });
     })();
-
-
-    // -----------------------------------------------------------------------
-    const parameters = YKNR.Core.importCurrentPlugin();
-    //console.log(parameters);
 
 
     // =======================================================================
@@ -479,7 +480,7 @@
 
         YKNR.Core.redefine(SceneManager, "updateMain", function($) {
             return function() {
-                $.call(this);
+                $.call(this, ...arguments);
                 TweenManager._update();
             };
         });
@@ -489,8 +490,8 @@
          * Tween処理を行うクラス.
          */
         class TweenEngine {
-            constructor() {
-                this._initialize.apply(this, arguments);
+            constructor(target) {
+                this._initialize(target);
             }
 
             get id() {
@@ -1021,6 +1022,8 @@
         return p;
     };
     */
+
+
     // =======================================================================
     // XorShift を用いたseed値指定が可能な符号なし32bitの乱数を生成するクラスのオブジェクト.
     YKNR.Random = (() => {
@@ -1169,12 +1172,74 @@
 
 
     // =======================================================================
-    // データURLを扱う便利関数たち
-    YKNR.UtilDataUrl = (() => {
+    // YKNR.UtilPluginCommand
+    (() => {
+        // constructor
+        YKNR.UtilPluginCommand = function YKNR_UtilPluginCommand() {
+            throw new Error("This is a static class");
+        };
+
+        YKNR.UtilPluginCommand.getNumber = function(params, key) {
+            let value = NaN;
+            if (params) {
+                if (key + "ForVariable" in params) {
+                    const variableId = Number(params[key + "ForVariable"]);
+                    if (variableId > 0) {
+                        value = $gameVariables.value(variableId);
+                    }
+                }
+                if (value === NaN && key in params) {
+                    value = Number(params[key]);
+                }
+            }
+            return value;
+        };
+
+        YKNR.UtilPluginCommand.getBoolean = function(params, key) {
+            let value = undefined;
+            if (params) {
+                if (key + "ForSwitch" in params) {
+                    const switchId = Number(params[key + "ForSwitch"]);
+                    if (switchId > 0) {
+                        value = $gameSwitches.value(switchId);
+                    }
+                }
+                if (value === undefined && key in params) {
+                    value = Boolean(params[key]);
+                }
+            }
+            return value;
+        };
+
+        YKNR.UtilPluginCommand.getGameActor = function(params) {
+            const id = this.getNumber(params, "actorId");
+            return $gameActors.actor(id);
+        };
+
+        YKNR.UtilPluginCommand.iterateActorId = function(interpreter, params, callback) {
+            const id = this.getNumber(params, "actorId");
+            interpreter.iterateActorId(id, callback);
+        };
+
+        YKNR.UtilPluginCommand.iterateActorIndex = function(interpreter, params, callback) {
+            const index = this.getNumber(params, "partyIndex");
+            interpreter.iterateActorIndex(index, callback);
+        };
+
+        YKNR.UtilPluginCommand.iterateEnemyIndex = function(interpreter, params, callback) {
+            const index = this.getNumber(params, "enemyIndex");
+            interpreter.iterateEnemyIndex(index, callback);
+        };
+    })();
+
+
+    // =======================================================================
+    // YKNR.UtilDataUrl
+    (() => {
         /** データURLのフォーマット */
-        const regDataUrlFormat = /^data:(?<mine>[a-z\/]+);(?<params>(?:(?:.+?=.+?);)+)*?base64,[a-zA-Z0-9\+\/=]+$/;
+        const REGEXP_DATAURL_FORMAT = /^data:(?<mine>[a-z\/]+);(?<params>(?:(?:.+?=.+?);)+)*?base64,[a-zA-Z0-9\+\/=]+$/;
         /** 文字列のエンコード/デコードの対象の文字の一覧 */
-        const encodeMap = {
+        const DATAURL_ENCODE_MAP = {
             "%": "%25",
             "=": "%3D",
             ";": "%3B",
@@ -1183,270 +1248,168 @@
             "　": "%E3%80%80",
         };
 
-        class YKNR_UtilDataUrl {
-
-            /**
-             * データURLか判定
-             *
-             * @param {string} url URL
-             * @return {boolean} データURLのフォーマットであれば true を返す
-             */
-            static test(url) {
-                return regDataUrlFormat.test(url);
-            }
-
-            /**
-             * 画像フォーマットのMINEタイプか判定
-             *
-             * @param {string} dataUrl データURL
-             * @return {boolean} JPEG or PNG であれば true を返す
-             */
-            static isImageMineType(dataUrl) {
-                const minetype = this.extractMimeType(dataUrl);
-                return ["image/jpeg", "image/png"].some((e) => e === minetype);
-            }
-
-            /**
-             * データURLのパラメータとして組み込めるよう, 文字列をエンコードする.
-             *
-             * @param {string} str エンコード前の文字列
-             * @return {string} エンコード後の文字列
-             */
-            static encode(str) {
-                Object.entries(encodeMap).forEach(([k, v]) => str = str.replace(k, v));
-                return str;
-            }
-
-            /**
-             * エンコードされたデータURLのパラメータの文字列をデコードする.
-             *
-             * @param {string} str エンコード前の文字列
-             * @return {string} エンコード後の文字列
-             */
-            static decode(str) {
-                Object.entries(encodeMap).reverse().forEach(([k, v]) => str = str.replace(v, k));
-                return str;
-            }
-
-            /**
-             * データURLに任意のパラメータを埋め込む.
-             *
-             * @param {string} dataUrl データURL
-             * @param {string} key パラメータのキー
-             * @param {number|string} value パラメータの値
-             * @return {string} パラメータを埋め込んだ新しいデータURL
-             */
-            static _setParam(dataUrl, key, value) {
-                key = this.encode(key);
-                const newParamsetText = `${key}=${this.encode(value + '')}`;
-
-                // key を探して既にあれば置換して返す.
-                const paramset = (dataUrl.match(regDataUrlFormat).groups.params || "").split(";");
-                for (const params of paramset) {
-                    const param = params.split("=");
-                    if (param[0] === key) {
-                        return dataUrl.replace(params, newParamsetText);
-                    }
-                }
-
-                return dataUrl.replace(/;base64/, ";" + newParamsetText + ";base64");
-            }
-
-            /**
-             * データURL内の任意のパラメータを抽出する.
-             *
-             * @param {string} dataUrl データURL
-             * @param {string} key パラメータのキー
-             * @return {string} key に対応したデコードされたパラメータの値
-             */
-            static _getParam(dataUrl, key) {
-                key = this.encode(key);
-
-                // key を探して既にあれば パラメータ をデコードして返す.
-                const paramset = (dataUrl.match(regDataUrlFormat).groups.params || "").split(";");
-                for (const params of paramset) {
-                    const param = params.split("=");
-                    if (param[0] === key) {
-                        return this.decode(param[1]);
-                    }
-                }
-
-                return null;
-            }
-
-            /**
-             * データURLに関数実行時の日時を "date" として埋め込む.
-             *
-             * @param {string} dataUrl データURL
-             * @return {string} "date"パラメータを埋め込んだ新しいデータURL
-             */
-            static setDateNow(dataUrl) {
-                return this._setParam(dataUrl, "date", Date.now());
-            }
-
-            /**
-             * データURLに任意のパラメータを "ext" として埋め込む.
-             *
-             * @param {string} dataUrl データURL
-             * @param {string} newValue パラメータ
-             * @return {string} "ext"パラメータを埋め込んだ新しいデータURL
-             */
-            static setExtParam(dataUrl, newValue) {
-                return this._setParam(dataUrl, "ext", newValue);
-            }
-
-            /**
-             * データURLからMIMEタイプを抽出する
-             *
-             * @param {string} dataUrl データURL
-             * @return {string} MIMEタイプ の文字列
-             */
-            static extractMimeType(dataUrl) {
-                return dataUrl.match(regDataUrlFormat)?.groups.mine || "";
-            }
-
-            /**
-             * データURLから日時パラメータを取得する
-             *
-             * @param {string} dataUrl データURL
-             * @return {string} 日時 の文字列
-             */
-            static getDateParam(dataUrl) {
-                return this._getParam(dataUrl, "date");
-            }
-
-            /**
-             * データURLから追加パラメータを抽出する
-             *
-             * @param {string} dataUrl データURL
-             * @return {string} 追加パラメータ の文字列
-             */
-            static getExtParam(dataUrl) {
-                return this._getParam(dataUrl, "ext");
-            }
-
-            /**
-             * データURLからバイナリデータを生成して返します
-             *
-             * @param {string} dataUrl データURL
-             * @return {ArrayBuffer} バイト配列
-             */
-            static toArrayBuffer(dataUrl) {
-                const bin = atob(dataUrl.split(",")[1]);
-                let buffer = new Uint8Array(bin.length);
-                for (let i = 0, l = bin.length; l > i; i++) {
-                    buffer[i] = bin.charCodeAt(i);
-                }
-                return buffer.buffer;
-            }
+        // constructor
+        YKNR.UtilDataUrl = function YKNR_UtilDataUrl() {
+            throw new Error("This is a static class");
         };
+
+        YKNR.UtilDataUrl.test = function(url) {
+            return REGEXP_DATAURL_FORMAT.test(url);
+        }
+
+        YKNR.UtilDataUrl.isImageMineType = function(dataUrl) {
+            const minetype = this.extractMimeType(dataUrl);
+            return ["image/jpeg", "image/png"].some((e) => e === minetype);
+        }
+
+        YKNR.UtilDataUrl.encode = function(str) {
+            /** @type {string[][]} */
+            const map = Object.entries(DATAURL_ENCODE_MAP);
+            map.forEach(([k, v]) => str = str.replace(k, v));
+            return str;
+        }
+
+        YKNR.UtilDataUrl.decode = function(str) {
+            /** @type {string[][]} */
+            const map = Object.entries(DATAURL_ENCODE_MAP);
+            map.reverse().forEach(([k, v]) => str = str.replace(v, k));
+            return str;
+        }
+
+        YKNR.UtilDataUrl._setParam = function(dataUrl, key, value) {
+            key = this.encode(key);
+            const newParamsetText = `${key}=${this.encode(value + '')}`;
+
+            // key を探して既にあれば置換して返す.
+            /** @type {string[]} */
+            const paramset = (dataUrl.match(REGEXP_DATAURL_FORMAT).groups.params || "").split(";");
+            for (const params of paramset) {
+                const param = params.split("=");
+                if (param[0] === key) {
+                    return dataUrl.replace(params, newParamsetText);
+                }
+            }
+
+            return dataUrl.replace(";base64", `;${newParamsetText};base64`);
+        }
+
+        YKNR.UtilDataUrl._getParam = function(dataUrl, key) {
+            key = this.encode(key);
+
+            // key を探して既にあれば パラメータ をデコードして返す.
+            /** @type {string[]} */
+            const paramset = (dataUrl.match(REGEXP_DATAURL_FORMAT).groups.params || "").split(";");
+            for (const params of paramset) {
+                const param = params.split("=");
+                if (param[0] === key) {
+                    return this.decode(param[1]);
+                }
+            }
+
+            return null;
+        }
+
+        YKNR.UtilDataUrl.setDateNow = function(dataUrl) {
+            return this._setParam(dataUrl, "date", Date.now());
+        }
+
+        YKNR.UtilDataUrl.setExtParam = function(dataUrl, newValue) {
+            return this._setParam(dataUrl, "ext", newValue);
+        }
+
+        YKNR.UtilDataUrl.extractMimeType = function(dataUrl) {
+            return dataUrl.match(REGEXP_DATAURL_FORMAT)?.groups.mine || "";
+        }
+
+        YKNR.UtilDataUrl.getDateParam = function(dataUrl) {
+            return this._getParam(dataUrl, "date");
+        }
+
+        YKNR.UtilDataUrl.getExtParam = function(dataUrl) {
+            return this._getParam(dataUrl, "ext");
+        }
+
+        YKNR.UtilDataUrl.toArrayBuffer = function(dataUrl) {
+            const bin = atob(dataUrl.split(",")[1]);
+            let buffer = new Uint8Array(bin.length);
+            for (let i = 0, l = bin.length; l > i; i++) {
+                buffer[i] = bin.charCodeAt(i);
+            }
+            return buffer.buffer;
+        }
 
         // -------------------------------------------------------------------
         // DataUrl に対応させるための再定義と追加処理
-        /**
-         * データURLからBlobを生成して読み込む
-         */
-        Bitmap.prototype._startConvertingDataUrl = function() {
-            const arrayBuffer = YKNR_UtilDataUrl.toArrayBuffer(this._url);
-            const mimeType = YKNR_UtilDataUrl.extractMimeType(this._url);
+
+        YKNR.Core.redefine(Bitmap.prototype, "_startLoading", function($) {
+            return function() {
+                if (YKNR.UtilDataUrl.test(this._url)) {
+                    this._startLoadingForDataUrl();
+                } else {
+                    $.call(this, ...arguments);
+                }
+            };
+        });
+
+        Bitmap.prototype._startLoadingForDataUrl = function() {
+            // MEMO : DataURLなら暗号化について考慮しない
+            this._image = new Image();
+            this._image.onload = this._onDataUrlLoad.bind(this);
+            this._image.onerror = this._onError.bind(this);
+            this._destroyCanvas();
+            this._loadingState = "loading";
+
+            const arrayBuffer = YKNR.UtilDataUrl.toArrayBuffer(this._url);
+            const mimeType = YKNR.UtilDataUrl.extractMimeType(this._url);
             const blob = new Blob([arrayBuffer], { type: mimeType });
             this._image.src = URL.createObjectURL(blob);
             if (this._image.width > 0) {
                 this._image.onload = null;
-                this._onLoad();
+                this._onDataUrlLoad();
             }
         };
 
-        YKNR.Core.redefine(Bitmap.prototype, "_startLoading", function($) {
-            return function() {
-                if (!YKNR_UtilDataUrl.test(this._url)) {
-                    $.call(this);
-                    return;
-                }
-                // DataURLなら暗号化について考慮しない
-                this._image = new Image();
-                this._image.onload = this._onLoad.bind(this);
-                this._image.onerror = this._onError.bind(this);
-                this._destroyCanvas();
-                this._loadingState = "loading";
-                this._startConvertingDataUrl();
-            };
-        });
+        Bitmap.prototype._onDataUrlLoad = function() {
+            // MEMO : DataURLなら暗号化について考慮しない
+            URL.revokeObjectURL(this._image.src);
+            this._loadingState = "loaded";
+            this._createBaseTexture(this._image);
+            this._callLoadListeners();
+        };
 
-        YKNR.Core.redefine(Bitmap.prototype, "_onLoad", function($) {
-            return function() {
-                if (!YKNR_UtilDataUrl.test(this._url)) {
-                    $.call(this);
-                    return;
-                }
-                // DataURLなら暗号化について考慮しない
-                URL.revokeObjectURL(this._image.src);
-                this._loadingState = "loaded";
-                this._createBaseTexture(this._image);
-                this._callLoadListeners();
-            };
-        });
-
-        /**
-         * 現在のキャンバスからJPEGフォーマットの DataURL を生成します.\
-         * 生成時の日時と追加パラメータを DataURL に埋め込み, 日時はキャッシュとして利用します.
-         *
-         * @param {number|string} extValue 埋め込む追加パラメータ
-         * @param {number} quality jpg品質(0-100指定)
-         * @return {string} JPEGフォーマットのデータURL
-         */
         Bitmap.prototype.toJpegDataUrl = function(extValue = "", quality = 90) {
             if (!this._canvas) {
                 return "";
             }
             const originalDataUrl = this._canvas.toDataURL("image/jpeg", quality / 100);
-            let newDataUrl = YKNR_UtilDataUrl.setDateNow(originalDataUrl);
+            let newDataUrl = YKNR.UtilDataUrl.setDateNow(originalDataUrl);
             if (extValue) {
-                newDataUrl = YKNR_UtilDataUrl.setExtParam(newDataUrl, extValue);
+                newDataUrl = YKNR.UtilDataUrl.setExtParam(newDataUrl, extValue);
             }
             return newDataUrl;
         };
 
-        /**
-         * 現在のキャンバスからPNGフォーマットの DataURL を生成します.\
-         * 生成時の日時と追加パラメータを DataURL に埋め込み, 日時はキャッシュとして利用します.
-         *
-         * @param {number|string} extValue 埋め込む追加パラメータ
-         * @return {string} PNGフォーマットのデータURL
-         */
         Bitmap.prototype.toPngDataUrl = function(extValue = "") {
             if (!this._canvas) {
                 return "";
             }
             const originalDataUrl = this._canvas.toDataURL("image/png");
-            let newDataUrl = YKNR_UtilDataUrl.setDateNow(originalDataUrl);
+            let newDataUrl = YKNR.UtilDataUrl.setDateNow(originalDataUrl);
             if (extValue) {
-                newDataUrl = YKNR_UtilDataUrl.setExtParam(newDataUrl, extValue);
+                newDataUrl = YKNR.UtilDataUrl.setExtParam(newDataUrl, extValue);
             }
             return newDataUrl;
         };
 
-        /**
-         * データURLからビットマップをロードします.\
-         * データURL内のパラメータをキャッシュキーとして利用します.
-         *
-         * @param {string} dataUrl データURL
-         * @return {Bitmap} ビットマップ
-         *
-         * @example
-         * // 4px x 4px の赤丸画像
-         * const url = "data:image/jpeg;ext=redCircle;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==";
-         * const bitmap = ImageManager.loadBitmapFromDataUrl(url, "example");
-         */
         ImageManager.loadBitmapFromDataUrl = function(dataUrl) {
             if (!dataUrl) {
                 return this._emptyBitmap;
             }
-            if (!YKNR_UtilDataUrl.isImageMineType(dataUrl)) {
+            if (!YKNR.UtilDataUrl.isImageMineType(dataUrl)) {
                 console.warn("This '%1' is not image MIME Type.".format(dataUrl));
                 return this._emptyBitmap;
             }
-            const dateKey = YKNR_UtilDataUrl.getDateParam(dataUrl);
+            const dateKey = YKNR.UtilDataUrl.getDateParam(dataUrl);
             if (!dateKey) {
                 // パラメータが設定されていなかったら, キャッシュせずにビットマップを生成する.
                 return Bitmap.load(dataUrl);
@@ -1457,19 +1420,12 @@
             }
             return cache[dateKey];
         };
-
-        return YKNR_UtilDataUrl;
     })();
 
 
     // =======================================================================
     // 既存オブジェクトに便利関数追加
     //------------------------------------------------------------------------
-    /**
-     * 任意のキャッシュキーの画像を削除する
-     *
-     * @param {string} cacheKey キャッシュキー
-     */
     ImageManager.clearAt = function(cacheKey) {
         const cache = this._cache;
         if (cache[cacheKey]) {
@@ -1479,20 +1435,6 @@
     };
 
     //------------------------------------------------------------------------
-    /**
-     * Takes a snapshot of the game screen.
-     *
-     * 出力するビットマップの幅と高さを指定できるように拡張しています.\
-     * それぞれが未指定の場合は, Bitmap.snap と同じ動作になります.
-     *
-     * @static
-     * @param {Stage} stage - The stage object.
-     * @param {number} outWidth 出力するビットマップの幅
-     * @param {number} outHeight 出力するビットマップの高さ
-     * @param {number} originWidth 元の幅
-     * @param {number} originHeight 元の高さ
-     * @returns {Bitmap} The new bitmap object.
-     */
     Bitmap.snapExt = function(
         stage,
         outWidth = Graphics.width,
@@ -1527,7 +1469,7 @@
     YKNR.Core.redefine(Graphics, "resize", function($) {
         return function(width, height) {
             console.log(`ScreenSize : ${width} x ${height}`);
-            $.call(this, width, height);
+            $.call(this, ...arguments);
         };
     });
 
