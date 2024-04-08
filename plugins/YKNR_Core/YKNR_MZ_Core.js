@@ -12,6 +12,7 @@
 //            :                    プラグインコマンドで使用する共通関数の追加
 //            :                    型定義ファイルを別途用意（主に自分用）
 //            :                    一部, クラス式による宣言を廃止
+//            : 1.2.1 (2024/04/09) NaNチェックが正常に動作しなかった問題の修正
 // ----------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -1188,7 +1189,7 @@
                         value = $gameVariables.value(variableId);
                     }
                 }
-                if (value === NaN && key in params) {
+                if (Number.isNaN(value) && key in params) {
                     value = Number(params[key]);
                 }
             }
