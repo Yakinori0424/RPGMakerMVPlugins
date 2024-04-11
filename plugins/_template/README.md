@@ -5,12 +5,12 @@
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/PluginName/PluginName.js
+[【Download for RPGMakerName】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/PluginName/PluginName.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
 *右クリック → 名前を付けて保存* でプラグインをダウンロードできます。  
-[【Download】][]
+[【Download for RPGMakerName】][]
 
 ---
 ## 使用方法
