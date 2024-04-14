@@ -33,7 +33,7 @@
 
 ---
 ## スクリーンショット
-![](./res/YKNR_TransferToEvent.jpg)<br><br>
+![](./res/YKNR_TransferToEvent_01.jpg)<br><br>
 
 ---
 ## License
