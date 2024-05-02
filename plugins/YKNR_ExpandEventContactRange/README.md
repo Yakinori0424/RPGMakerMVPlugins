@@ -5,7 +5,7 @@
 
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
-[【Download for MZ】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_MZ_ExpandEventContactRange/YKNR_MZ_ExpandEventContactRange.js
+[【Download for MZ】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/YKNR_ExpandEventContactRange/YKNR_MZ_ExpandEventContactRange.js
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
