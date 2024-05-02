@@ -84,7 +84,7 @@
  * 
  * @arg adjustYForVariable
  * @text 位置調整Y（変数で指定）
- * @desc 左右へ何マス分位置調整するかを変数で指定します。
+ * @desc 上下へ何マス分位置調整するかを変数で指定します。
  * 利用しない場合は「なし」に設定してください。
  * @type variable
  * @default 0
@@ -164,7 +164,7 @@
  * 
  * @arg adjustYForVariable
  * @text 位置調整Y（変数で指定）
- * @desc 左右へ何マス分位置調整するかを変数で指定します。
+ * @desc 上下へ何マス分位置調整するかを変数で指定します。
  * 利用しない場合は「なし」に設定してください。
  * @type variable
  * @default 0
