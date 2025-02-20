@@ -5,6 +5,8 @@
 // License    : MIT License(http://opensource.org/licenses/mit-license.php)
 // ---------------------------------------------------------------------------
 // Version    : 1.0.0 (2024/04/14) 公開
+//            : 1.1.0 (2025/02/20) MZバージョン1.9.0 新アノテーション対応
+//            :                    オフセット値による補正計算処理の最適化
 // ---------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -29,10 +31,8 @@
  * 
  * @arg mapId
  * @text マップID（直接指定）
- * @desc 遷移先のマップのIDです。存在しないマップIDの場合は
- * エラーが起きるので注意してください。
- * @type number
- * @min 1
+ * @desc 遷移先のマップです。
+ * @type map
  * @default 1
  * 
  * @arg mapIdForVariable
@@ -45,7 +45,7 @@
  * @arg eventId
  * @text イベントID（直接指定）
  * @desc 遷移先のイベントのIDです。存在しないイベントIDの場合は
- * マップの左上に移動されます。
+ * マップの左上(0, 0)に移動されます。
  * @type number
  * @min 1
  * @default 1
@@ -58,7 +58,7 @@
  * @default 0
  * 
  * @arg adjustX
- * @text 位置調整X（直接指定）
+ * @text オフセット値X（直接指定）
  * @desc 左右へ何マス分位置調整するか指定します。
  * 左方向へはマイナス、右方向へはプラスの値になります。
  * @type number
@@ -67,14 +67,14 @@
  * @default 0
  * 
  * @arg adjustXForVariable
- * @text 位置調整X（変数で指定）
+ * @text オフセット値X（変数で指定）
  * @desc 左右へ何マス分位置調整するかを変数で指定します。
  * 利用しない場合は「なし」に設定してください。
  * @type variable
  * @default 0
  * 
  * @arg adjustY
- * @text 位置調整Y（直接指定）
+ * @text オフセット値Y（直接指定）
  * @desc 上下へ何マス分位置調整するか指定します。
  * 上方向へはマイナス、下方向へはプラスの値になります。
  * @type number
@@ -83,7 +83,7 @@
  * @default 0
  * 
  * @arg adjustYForVariable
- * @text 位置調整Y（変数で指定）
+ * @text オフセット値Y（変数で指定）
  * @desc 上下へ何マス分位置調整するかを変数で指定します。
  * 利用しない場合は「なし」に設定してください。
  * @type variable
@@ -125,7 +125,7 @@
  * @arg eventId
  * @text イベントID（直接指定）
  * @desc 遷移先のイベントのIDです。存在しないイベントIDの場合は
- * マップの左上に移動されます。
+ * マップの左上(0, 0)に移動されます。
  * @type number
  * @min 1
  * @default 1
@@ -138,7 +138,7 @@
  * @default 0
  * 
  * @arg adjustX
- * @text 位置調整X（直接指定）
+ * @text オフセット値X（直接指定）
  * @desc 左右へ何マス分位置調整するか指定します。
  * 左方向へはマイナス、右方向へはプラスの値になります。
  * @type number
@@ -147,14 +147,14 @@
  * @default 0
  * 
  * @arg adjustXForVariable
- * @text 位置調整X（変数で指定）
+ * @text オフセット値X（変数で指定）
  * @desc 左右へ何マス分位置調整するかを変数で指定します。
  * 利用しない場合は「なし」に設定してください。
  * @type variable
  * @default 0
  * 
  * @arg adjustY
- * @text 位置調整Y（直接指定）
+ * @text オフセット値Y（直接指定）
  * @desc 上下へ何マス分位置調整するか指定します。
  * 上方向へはマイナス、下方向へはプラスの値になります。
  * @type number
@@ -163,7 +163,7 @@
  * @default 0
  * 
  * @arg adjustYForVariable
- * @text 位置調整Y（変数で指定）
+ * @text オフセット値Y（変数で指定）
  * @desc 上下へ何マス分位置調整するかを変数で指定します。
  * 利用しない場合は「なし」に設定してください。
  * @type variable
@@ -199,10 +199,11 @@
  * 
  * 
  * @===========================================================================
- * @help YKNR_MZ_TransferToEvent.js (Version : 1.0.0)
+ * @help YKNR_MZ_TransferToEvent.js (Version : 1.1.0)
  * ----------------------------------------------------------------------------
  * 【！注意！】
  * ※共通プラグイン「YKNR_MZ_Core.js」のバージョン(1.2.1)以降でのみ対応。
+ * ※ツクールMZ本体のバージョン(1.9.0)以降でのみ対応。
  * ----------------------------------------------------------------------------
  *【機能紹介】
  * 通常のイベントコマンドの「場所移動」は
@@ -269,10 +270,10 @@
  * const eventId = 1;
  * const direction = 0;
  * const fadeType = 0;
- * const adjustX = 0;
- * const adjustY = 1;
+ * const ox = 0;
+ * const oy = 1;
  * $gamePlayer.reserveTransferToEvent(mapId, eventId, direction, fadeType);
- * $gamePlayer.reserveTransferOffset(adjustX, adjustY);
+ * $gamePlayer.reserveTransferOffset(ox, oy);
  * this.setWaitMode("transfer");
  * -------------------------------------
 */
@@ -404,14 +405,8 @@
      * @param {number} oy 上下方向のマス数
      */
     Game_Player.prototype.addTransferPos = function(ox, oy) {
-        const isLoopH = $gameMap.isLoopHorizontal();
-        const isLoopV = $gameMap.isLoopVertical();
-        const w = $gameMap.width();
-        const h = $gameMap.height();
-        const tx = this._newX + ox;
-        const ty = this._newY + oy;
-        this._newX = isLoopH ? (tx + w) % w : tx.clamp(0, w - 1);
-        this._newY = isLoopV ? (ty + h) % h : ty.clamp(0, h - 1);
+        this._newX = $gameMap.roundX(this._newX + ox);
+        this._newY = $gameMap.roundY(this._newY + oy);
     };
 
     /**
