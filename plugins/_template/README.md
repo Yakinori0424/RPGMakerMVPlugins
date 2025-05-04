@@ -6,11 +6,15 @@
 <!-- ここからURL一覧 -->
 [LICENSE]: ./LICENSE
 [【Download for RPGMakerName】]: https://raw.githubusercontent.com/Yakinori0424/RPGMakerMVPlugins/master/plugins/PluginName/PluginName.js
+[共通プラグイン]: ../YKNR_Core
 <!-- ここまでURL一覧 -->
 
 ## ダウンロード
 *右クリック → 名前を付けて保存* でプラグインをダウンロードできます。  
 [【Download for RPGMakerName】][]
+
+**実行には、 [共通プラグイン][] が必要です！**  
+**未導入の方はリンク先からダウンロードしてください。**
 
 ---
 ## 使用方法
