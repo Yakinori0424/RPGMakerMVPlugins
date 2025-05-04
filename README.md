@@ -13,6 +13,7 @@
 [YKNR_SnapshotExporter.js]: /plugins/YKNR_SnapshotExporter
 [YKNR_SaveThumbnail.js]: /plugins/YKNR_SaveThumbnail
 [YKNR_TransferToEvent.js]: /plugins/YKNR_TransferToEvent
+[YKNR_NewestItemList.js]: /plugins/YKNR_NewestItemList
 <!-- ここまでURL一覧 -->
 
 ## プラグイン一覧
@@ -27,6 +28,7 @@
 |[YKNR_SnapshotExporter.js][]|画面撮影のほか、<br>任意のウィンドウのみ/スプライトのみを撮影し、<br>画像ファイルとしてダウンロードする機能を追加します。| 1.0.1 | 1.0.0 |
 |[YKNR_SaveThumbnail.js][]|セーブファイルにサムネイル用の画像を保存し、<br>セーブ/ロード画面でサムネイルを表示します。| 1.2.0 | 1.0.0 |
 |[YKNR_TransferToEvent.js][]|イベントと同じ位置へ場所移動ができるようになります。| × | 1.1.0 |
+|[YKNR_NewestItemList.js][]|アイテム画面に「最近入手したアイテム一覧」を表示します。| × | 1.0.0 |
 
 ---
 ## 補足事項など
