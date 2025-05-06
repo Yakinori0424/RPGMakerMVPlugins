@@ -13,6 +13,8 @@
 //            :                    型定義ファイルを別途用意（主に自分用）
 //            :                    一部, クラス式による宣言を廃止
 //            : 1.2.1 (2024/04/09) NaNチェックが正常に動作しなかった問題の修正
+//            : 1.3.0 (2024/05/07) メタデータ抽出時に利用する解析関数を追加
+//            :                    DataManagerにオブジェクト判定関数を追加
 // ----------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -30,7 +32,7 @@
  * 
  * 
  * @===========================================================================
- * @help YKNR_MZ_Core.js (Version : 1.2.1)
+ * @help YKNR_MZ_Core.js (Version : 1.3.0)
  * ----------------------------------------------------------------------------
  *  *【！注意！】
  * ※ツクールMZのバージョンが 1.3.2 未満の場合、動作できません。
@@ -390,6 +392,106 @@
                 YKNR.Extension.onExtracedMetadata(data);
             };
         });
+    })();
+
+
+    // -----------------------------------------------------------------------
+    // YKNR.UtilRPGData
+    (() => {
+        // constructor
+        YKNR.UtilRPGData = function YKNR_UtilRPGData() {
+            throw new Error("This is a static class");
+        };
+
+        YKNR.UtilRPGData.parseParams = function(data, ...metaKeys) {
+            const regExp = /([^\s,:]+):([^\s,]+)/g;
+
+            /** @type {[key: string]: any} */
+            const result = {};
+
+            /** @type {string} */
+            const metaValue = data.meta[metaKeys.find(key => data.meta.hasOwnProperty(key))] || "";
+            /** @type {string[]} */
+            const matchs = [...metaValue.matchAll(regExp)];
+            for (let match of matchs) {
+                result[match[1]] = YKNR.Core.paramReplacer(match[1], match[2]);
+            }
+
+            return result;
+        };
+    })();
+
+    // -------------------------------------------------------------------
+    // DataManager.isMapObject のような判定関数の全オブジェクト版を用意.
+    (() => {
+
+        DataManager.isActorObject = function(object) {
+            return !!(object.profile && object.equips);
+        };
+        DataManager.isClassObject = function(object) {
+            return !!(object.expParams && object.expParams);
+        };
+        DataManager.isSkillObject = function(object) {
+            return !!(object.damage && object.message1 !== undefined && object.message2 !== undefined);
+        };
+        DataManager.isItemObject = function(object) {
+            return !!(object.damage && object.message1 === undefined && object.message2 === undefined);
+        };
+        DataManager.isWeaponObject = function(object) {
+            return !!(object.params && object.wtypeId !== undefined);
+        };
+        DataManager.isArmorObject = function(object) {
+            return !!(object.params && object.atypeId !== undefined);
+        };
+        DataManager.isEnemyObject = function(object) {
+            return !!(object.params && object.actions && object.dropItems);
+        };
+        DataManager.isTroopObject = function(object) {
+            return !!(object.pages && object.members);
+        };
+        DataManager.isStateObject = function(object) {
+            return !!(object.removeAtBattleEnd !== undefined && object.removeByRestriction !== undefined);
+        };
+        DataManager.isAnimationObject = function(object) {
+            return !!(object.flashTimings && object.soundTimings);
+        };
+        DataManager.isTilesetObject = function(object) {
+            return !!(object.tilesetNames && object.flags);
+        };
+        DataManager.isCommonEventObject = function(object) {
+            return !!(object.trigger !== undefined && object.list);
+        };
+        DataManager.isSystemObject = function(object) {
+            return !!(object.gameTitle !== undefined && object.battleSystem !== undefined);
+        };
+        DataManager.isMapInfoObject = function(object) {
+            return !!(object.order !== undefined && object.parentId !== undefined);
+        };
+        DataManager.isOtherObject = function(object) {
+            /** @type {Function[]} */
+            const list = [
+                this.isActorObject,
+                this.isClassObject,
+                this.isSkillObject,
+                this.isItemObject,
+                this.isWeaponObject,
+                this.isArmorObject,
+                this.isEnemyObject,
+                this.isTroopObject,
+                this.isStateObject,
+                this.isAnimationObject,
+                this.isTilesetObject,
+                this.isCommonEventObject,
+                this.isSystemObject,
+                this.isMapInfoObject,
+                this.isMapObject,
+            ];
+            return !list.some(callback => callback.call(this, object));
+        };
+        DataManager.isEventObject = function(object) {
+            return !!(object.pages && object.members === undefined);
+        };
+
     })();
 
 
