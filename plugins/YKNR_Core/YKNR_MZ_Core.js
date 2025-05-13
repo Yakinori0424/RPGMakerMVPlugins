@@ -15,6 +15,9 @@
 //            : 1.2.1 (2024/04/09) NaNチェックが正常に動作しなかった問題の修正
 //            : 1.3.0 (2024/05/07) メタデータ抽出時に利用する解析関数を追加
 //            :                    DataManagerにオブジェクト判定関数を追加
+//            : 1.3.1 (2024/05/99) 関数への変換処理で参照エラーが起きていたので修正
+//            :                    []や{}で囲った文字列の誤解析によるエラーを修正
+//            :                    関数の解析に配列にも対応させる
 // ----------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -32,7 +35,7 @@
  * 
  * 
  * @===========================================================================
- * @help YKNR_MZ_Core.js (Version : 1.3.0)
+ * @help YKNR_MZ_Core.js (Version : 1.3.1)
  * ----------------------------------------------------------------------------
  *  *【！注意！】
  * ※ツクールMZのバージョンが 1.3.2 未満の場合、動作できません。
@@ -172,6 +175,16 @@
         };
 
         YKNR.Core.paramReplacer = function(key, value) {
+            // Value Object
+            if (key === "") {
+                return value;
+            }
+
+            // undefined
+            if (value === undefined) {
+                return undefined;
+            }
+
             // Boolean
             if (value === "true" || value === "false") {
                 return value === "true";
@@ -183,9 +196,13 @@
             }
 
             // Array or Object
-            if (value[0] === "[" && value[value.length - 1] === "]"
-                || value[0] === "{" && value[value.length - 1] === "}") {
-                return JSON.parse(value);
+            if ((value[0] === "[" && value[value.length - 1] === "]")
+                || (value[0] === "{" && value[value.length - 1] === "}")) {
+                try {
+                    return JSON.parse(value);
+                } catch (error) {
+                    return value;
+                }
             }
 
             // String or Any
@@ -196,10 +213,10 @@
             // パラメータ名を元に変換
             if (REGEXP_REVIVER_ARRAY2MAP.some((reg) => reg.test(key))) {
                 // value to Map
-                return YKNR_Core.convertArrayToMap(value);
+                return YKNR.Core.convertArrayToMap(value);
             } else if (REGEXP_REVIVER_VALUE2FUNC.some((reg) => reg.test(key))) {
                 // value to Function
-                return YKNR_Core.convertValuetoFunction(value);
+                return YKNR.Core.convertValuetoFunction(value);
             }
 
             // Raw
@@ -229,23 +246,25 @@
 
         YKNR.Core.convertValuetoFunction = function(value) {
             // 関数変換可否チェック
-            if (typeof (value) === "string") {
+            if (Array.isArray(value)) {
+                return value.map(script => YKNR.Core.convertValuetoFunction(script));
+            } else if (typeof (value) === "string") {
                 if (value[0] === "\"" && value[value.length - 1] === "\"") {
                     // String(Note) to Function(引数なし)
-                    return this.toFunction(JSON.parse(value));
+                    return YKNR.Core.toFunction(JSON.parse(value));
                 } else {
                     // String to Function(引数なし)
-                    return this.toFunction(value);
+                    return YKNR.Core.toFunction(value);
                 }
             } else if (typeof (value) === "object") {
                 if ("jsCode" in value) {
                     const code = value.jsCode;
                     if (code[0] === "\"" && code[code.length - 1] === "\"") {
                         // Object(Note jsCode) to Function(引数あり)
-                        return this.toFunction(value.argFormat, JSON.parse(code));
+                        return YKNR.Core.toFunction(value.argFormat, JSON.parse(code));
                     } else {
                         // Object to Function(引数あり)
-                        return this.toFunction(value.argFormat, code);
+                        return YKNR.Core.toFunction(value.argFormat, code);
                     }
                 }
             }
@@ -1565,6 +1584,33 @@
         renderTexture.destroy({ destroyBase: true });
         bitmap.baseTexture.update();
         return bitmap;
+    };
+
+
+    /**
+     * キー入力が離された瞬間を判定する.
+     * @param {string} keyName 
+     * @returns {bool} 現フレームでの入力は無く, 前フレームでの入力があった場合は true を返す.
+     */
+    Input.isReleased = function(keyName) {
+        if (this._isEscapeCompatible(keyName) && this.isReleased("escape")) {
+            return true;
+        } else {
+            return !this._currentState[keyName] && !!this._previousState[keyName];
+        }
+    };
+
+    /**
+     * 入力中のフレーム数を取得する.
+     * @param {string} keyName 
+     * @returns {number} 押下時間を返す.
+     */
+    Input.getPressedFrame = function(keyName) {
+        if (this._isEscapeCompatible(keyName)) {
+            return this.getPressedFrame("escape");
+        } else {
+            return this._latestButton === keyName ? this._pressedTime : 0;
+        }
     };
 
 
