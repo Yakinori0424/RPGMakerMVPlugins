@@ -15,9 +15,10 @@
 //            : 1.2.1 (2024/04/09) NaNチェックが正常に動作しなかった問題の修正
 //            : 1.3.0 (2024/05/07) メタデータ抽出時に利用する解析関数を追加
 //            :                    DataManagerにオブジェクト判定関数を追加
-//            : 1.3.1 (2024/05/99) 関数への変換処理で参照エラーが起きていたので修正
+//            : 1.3.1 (2024/05/13) 関数への変換処理で参照エラーが起きていたので修正
 //            :                    []や{}で囲った文字列の誤解析によるエラーを修正
 //            :                    関数の解析に配列にも対応させる
+//            : 1.3.2 (2024/05/14) 結果を返す関数への変換処理を追加
 // ----------------------------------------------------------------------------
 // Twitter    : https://twitter.com/Noritake0424
 // Github     : https://github.com/Yakinori0424/RPGMakerMVPlugins
@@ -35,7 +36,7 @@
  * 
  * 
  * @===========================================================================
- * @help YKNR_MZ_Core.js (Version : 1.3.1)
+ * @help YKNR_MZ_Core.js (Version : 1.3.2)
  * ----------------------------------------------------------------------------
  *  *【！注意！】
  * ※ツクールMZのバージョンが 1.3.2 未満の場合、動作できません。
@@ -116,6 +117,7 @@
         const REGEXP_SARCH_PULGIN_NAME = Object.freeze(/^.*\/plugins\/(.*).js$/);
         const REGEXP_REVIVER_ARRAY2MAP = Object.freeze([/^.+?Map$/, /^.+?Dictionary$/]);
         const REGEXP_REVIVER_VALUE2FUNC = Object.freeze([/^.+?Function$/, /^.+?Callback$/, /^On[A-Z].+$/]);
+        const REGEXP_REVIVER_VALUE2FORMULA = Object.freeze([/^.+?Formula$/]);
 
         /** @type {Map<string,boolean>} */
         const _imported = new Map();
@@ -217,6 +219,9 @@
             } else if (REGEXP_REVIVER_VALUE2FUNC.some((reg) => reg.test(key))) {
                 // value to Function
                 return YKNR.Core.convertValuetoFunction(value);
+            } else if (REGEXP_REVIVER_VALUE2FORMULA.some((reg) => reg.test(key))) {
+                // value to Formula Function
+                return YKNR.Core.convertValuetoFormula(value);
             }
 
             // Raw
@@ -266,6 +271,23 @@
                         // Object to Function(引数あり)
                         return YKNR.Core.toFunction(value.argFormat, code);
                     }
+                }
+            }
+
+            // empty function
+            return (function() { });
+        };
+
+        YKNR.Core.convertValuetoFormula = function(value) {
+            // 関数変換可否チェック
+            if (Array.isArray(value)) {
+                return value.map(script => YKNR.Core.convertValuetoFormula(script));
+            } else if (typeof (value) === "string") {
+                return YKNR.Core.toFunction("return " + value);
+            } else if (typeof (value) === "object") {
+                if ("jsCode" in value) {
+                    const code = value.jsCode;
+                    return YKNR.Core.toFunction(value.argFormat, "return " + code);
                 }
             }
 
