@@ -1,5 +1,5 @@
 //============================================================================
-// YKNR_SlideInformation.js - ver.2.0.0
+// YKNR_SlideInformation.js - ver.2.0.1
 // ---------------------------------------------------------------------------
 // Copyright (c) 2017 Yakinori
 // This software is released under the MIT License.
@@ -122,6 +122,9 @@
  *
  * ---------------------------------------------------------------------------
  *【更新履歴】
+ * [2023/10/23] [2.0.1] ・Fixed a bug where the same SlideInformation Window
+ *                        would appear when interacting with another event.
+ *                        -- Ruchian
  * [2017/10/15] [2.0.0] ・1.5.0 以降の仕様に合わせてパラメータの作り直し。
  *                        パラメータ名が変更になったため、再度設定が必要です。
  *                      ・お知らせのテキストを、外部データを用いずに
@@ -660,7 +663,7 @@
             } else if (this.canStart()) {
                 this.startMessage();
             } else if (this.isAutoEndMessage()) {
-                this._endClose = false;
+                this._endClose = true;
                 this.endMessage();
                 return;
             } else {
